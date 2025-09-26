@@ -1,11 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
-import { CheckCircle, XCircle, HelpCircle, MessageSquare, Star, Clock } from 'lucide-react';
+import { CheckCircle, XCircle, HelpCircle, MessageSquare, Star, Clock, Users } from 'lucide-react';
 import { formatTimeInTimezone } from '@/lib/timezone-utils';
 import { MeetingSlot, Participant, Event } from '@/lib/types';
+import { useMeetingRealtime } from '@/lib/useMeetingRealtime';
+import { RealtimeStatus } from '@/components/RealtimeStatus';
 
 interface TimeSlotWithScore extends MeetingSlot {
   score?: number;
@@ -35,13 +37,40 @@ interface Response {
 export function AvailabilityResponder({
   event,
   participant,
-  timeSlots,
+  timeSlots: initialTimeSlots,
   onResponseUpdated
 }: AvailabilityResponderProps) {
   const [responses, setResponses] = useState<Record<string, Response>>({});
   const [isSubmitting, setIsSubmitting] = useState<Record<string, boolean>>({});
   const [expandedSlot, setExpandedSlot] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [recentResponses, setRecentResponses] = useState<Set<string>>(new Set());
+
+  // Real-time integration
+  const { data: realtimeData, realtimeState } = useMeetingRealtime({
+    eventId: event.id,
+    participantId: participant.id,
+    onParticipantResponse: useCallback((participantId: string, slotId: string) => {
+      if (participantId !== participant.id) {
+        // Highlight recent responses from other participants
+        setRecentResponses(prev => new Set([...prev, `${participantId}-${slotId}`]));
+        setTimeout(() => {
+          setRecentResponses(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(`${participantId}-${slotId}`);
+            return newSet;
+          });
+        }, 3000);
+      }
+    }, [participant.id]),
+    onScoreUpdate: useCallback(() => {
+      // Score updates are handled automatically by the real-time data
+      onResponseUpdated?.();
+    }, [onResponseUpdated])
+  });
+
+  // Use real-time data if available, otherwise fall back to props
+  const timeSlots = realtimeData.timeSlots.length > 0 ? realtimeData.timeSlots : initialTimeSlots;
 
   // Load existing responses
   useEffect(() => {
@@ -84,10 +113,14 @@ export function AvailabilityResponder({
     };
 
     const updatedResponse = { ...currentResponse, ...response };
-    setResponses(prev => ({ ...prev, [slotId]: updatedResponse }));
 
+    // Optimistic update - show immediately
+    setResponses(prev => ({ ...prev, [slotId]: updatedResponse }));
     setIsSubmitting(prev => ({ ...prev, [slotId]: true }));
     setError(null);
+
+    // Store previous state for rollback
+    const previousResponse = currentResponse;
 
     try {
       const apiResponse = await fetch(`/api/timeslots/${slotId}/responses`, {
@@ -108,16 +141,19 @@ export function AvailabilityResponder({
         throw new Error(errorData.error || 'Failed to update response');
       }
 
+      // Success - real-time updates will handle the rest
       onResponseUpdated?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update response');
-      // Revert the optimistic update
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update response';
+      setError(errorMessage);
+
+      // Rollback optimistic update on error
       setResponses(prev => {
         const newResponses = { ...prev };
-        if (Object.keys(response).length === Object.keys(updatedResponse).length) {
+        if (Object.keys(previousResponse).length === 0) {
           delete newResponses[slotId];
         } else {
-          newResponses[slotId] = currentResponse;
+          newResponses[slotId] = previousResponse;
         }
         return newResponses;
       });
@@ -206,8 +242,14 @@ export function AvailabilityResponder({
             <MessageSquare className="h-5 w-5" />
             Your Availability
           </CardTitle>
-          <div className="text-sm text-muted-foreground">
-            {stats.responded}/{stats.total} responded
+          <div className="flex items-center gap-3">
+            {/* Connection Status */}
+            <RealtimeStatus state={realtimeState} />
+
+            {/* Response Count */}
+            <div className="text-sm text-muted-foreground">
+              {stats.responded}/{stats.total} responded
+            </div>
           </div>
         </div>
 
@@ -250,11 +292,18 @@ export function AvailabilityResponder({
               const response = responses[slot.id];
               const isExpanded = expandedSlot === slot.id;
               const isLoading = isSubmitting[slot.id];
+              const hasRecentActivity = slot.responses?.some(r =>
+                recentResponses.has(`${r.participant_id}-${slot.id}`)
+              );
+              const responseCount = slot.responses?.length || 0;
+              const totalParticipants = realtimeData.participants.length || slot.total_participants || 0;
 
               return (
                 <div
                   key={slot.id}
-                  className={`border rounded-lg transition-all ${getStatusColor(response?.status)}`}
+                  className={`border rounded-lg transition-all duration-300 ${getStatusColor(response?.status)} ${
+                    hasRecentActivity ? 'ring-2 ring-blue-300 ring-opacity-50' : ''
+                  }`}
                 >
                   <div className="p-4">
                     <div className="flex items-center justify-between">
@@ -271,10 +320,26 @@ export function AvailabilityResponder({
                       <div className="flex items-center gap-2">
                         {response && getStatusIcon(response.status)}
 
+                        {/* Participant response count */}
+                        {totalParticipants > 0 && (
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Users className="h-3 w-3" />
+                            <span>{responseCount}/{totalParticipants}</span>
+                          </div>
+                        )}
+
+                        {/* Live score with animation */}
                         {slot.attendance_score !== undefined && (
-                          <div className="text-xs text-muted-foreground">
+                          <div className={`text-xs transition-all duration-300 ${
+                            hasRecentActivity ? 'text-blue-600 font-medium' : 'text-muted-foreground'
+                          }`}>
                             Score: {Math.round(slot.attendance_score)}%
                           </div>
+                        )}
+
+                        {/* Recent activity indicator */}
+                        {hasRecentActivity && (
+                          <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse"></div>
                         )}
                       </div>
                     </div>
