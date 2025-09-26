@@ -2,48 +2,49 @@
 
 import React, { useState, useEffect } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
-import { TimeSlotProposer } from '@/components/TimeSlotProposer';
-import { AvailabilityResponder } from '@/components/AvailabilityResponder';
+import { AvailabilityGrid } from '@/components/AvailabilityGrid';
+import { ParticipantNameEntry } from '@/components/ParticipantNameEntry';
+import { LLMChatWindow } from '@/components/LLMChatWindow';
 import { Button } from '@/components/ui/Button';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
+import { Card, CardContent } from '@/components/ui/Card';
 import {
   Calendar,
   Users,
   Clock,
-  Settings,
-  BarChart3,
-  UserPlus,
-  Share2
+  MessageSquare,
+  Share2,
+  CheckCircle
 } from 'lucide-react';
-import { Event, Participant, MeetingSlot } from '@/lib/types';
-import { getTimezoneFriendlyLabel } from '@/lib/timezone-utils';
+import { Event, Participant } from '@/lib/types';
 
 interface EventPageProps {
   params: {
     token: string;
   };
-  searchParams: {
-    role?: string;
+}
+
+interface ParticipantAvailability {
+  participantId: string;
+  participantName: string;
+  availability: {
+    [key: string]: 'available' | 'unavailable' | 'maybe';
   };
 }
 
-export default function EventPage({ params, searchParams }: EventPageProps) {
+export default function EventPage({ params }: EventPageProps) {
   const [event, setEvent] = useState<Event | null>(null);
-  const [participants, setParticipants] = useState<Participant[]>([]);
-  const [timeSlots, setTimeSlots] = useState<MeetingSlot[]>([]);
   const [currentParticipant, setCurrentParticipant] = useState<Participant | null>(null);
+  const [participantAvailability, setParticipantAvailability] = useState<ParticipantAvailability[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'respond' | 'propose' | 'results'>('respond');
-  const [showJoinForm, setShowJoinForm] = useState(false);
-  const [newParticipantName, setNewParticipantName] = useState('');
-  const [newParticipantEmail, setNewParticipantEmail] = useState('');
+  const [isJoining, setIsJoining] = useState(false);
+  const [showChatWindow, setShowChatWindow] = useState(false);
+  const [isOrganizer] = useState(false);
 
-  const isOrganizer = searchParams.role === 'organizer';
 
   useEffect(() => {
     loadEventData();
-  }, [params.token]);
+  }, [params.token]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadEventData = async () => {
     try {
@@ -63,31 +64,19 @@ export default function EventPage({ params, searchParams }: EventPageProps) {
 
       setEvent(foundEvent);
 
-      // Load participants
+      // Load participants and their availability
       const participantsResponse = await fetch(`/api/participants?event_id=${foundEvent.id}`);
       if (participantsResponse.ok) {
         const { participants: eventParticipants } = await participantsResponse.json();
-        setParticipants(eventParticipants);
 
-        // Try to identify current participant (this would be more sophisticated in a real app)
-        if (isOrganizer) {
-          const organizer = eventParticipants.find((p: Participant) => p.role === 'organizer');
-          setCurrentParticipant(organizer);
-        }
-      }
+        // Transform participants into availability format
+        const availabilityData = eventParticipants.map((p: Participant) => ({
+          participantId: p.id,
+          participantName: p.name,
+          availability: {} // This would be loaded from availability table in real implementation
+        }));
 
-      // Load time slots
-      const slotsResponse = await fetch(`/api/meetings/${foundEvent.id}/timeslots`);
-      if (slotsResponse.ok) {
-        const { timeSlots: eventTimeSlots } = await slotsResponse.json();
-        setTimeSlots(eventTimeSlots);
-      }
-
-      // Set default tab based on role and content
-      if (isOrganizer) {
-        setActiveTab('propose');
-      } else {
-        setActiveTab('respond');
+        setParticipantAvailability(availabilityData);
       }
 
     } catch (err) {
@@ -97,10 +86,12 @@ export default function EventPage({ params, searchParams }: EventPageProps) {
     }
   };
 
-  const handleJoinAsParticipant = async () => {
-    if (!newParticipantName.trim() || !event) return;
+  const handleJoinAsParticipant = async (name: string) => {
+    if (!name.trim() || !event) return;
 
     try {
+      setIsJoining(true);
+
       const response = await fetch('/api/participants', {
         method: 'POST',
         headers: {
@@ -108,8 +99,8 @@ export default function EventPage({ params, searchParams }: EventPageProps) {
         },
         body: JSON.stringify({
           event_id: event.id,
-          name: newParticipantName,
-          email: newParticipantEmail,
+          name: name,
+          email: '',
           role: 'required'
         }),
       });
@@ -121,11 +112,38 @@ export default function EventPage({ params, searchParams }: EventPageProps) {
 
       const { participant } = await response.json();
       setCurrentParticipant(participant);
-      setShowJoinForm(false);
       await loadEventData(); // Refresh data
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to join event');
+    } finally {
+      setIsJoining(false);
     }
+  };
+
+  const handleAvailabilityChange = (participantId: string, timeSlot: { date: string; time: string }, status: 'available' | 'unavailable' | 'maybe') => {
+    const slotKey = `${timeSlot.date}-${timeSlot.time}`;
+
+    setParticipantAvailability(prev =>
+      prev.map(p =>
+        p.participantId === participantId
+          ? {
+              ...p,
+              availability: {
+                ...p.availability,
+                [slotKey]: status
+              }
+            }
+          : p
+      )
+    );
+
+    // In real implementation, this would also save to the database
+  };
+
+  const handleLLMAvailabilityUpdate = (message: string) => {
+    // In real implementation, this would process the natural language
+    // and update availability accordingly
+    console.log('Processing LLM message:', message);
   };
 
   const copyShareLink = async () => {
@@ -168,38 +186,67 @@ export default function EventPage({ params, searchParams }: EventPageProps) {
 
   if (!event) return null;
 
-  const formatEventDate = () => {
-    const start = new Date(event.start_date);
-    const end = new Date(event.end_date);
+  // If no current participant, show name entry
+  if (!currentParticipant) {
+    return (
+      <AppShell>
+        <div className="max-w-4xl mx-auto">
+          {/* Event Header */}
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-foreground mb-2">
+              {event.title}
+            </h1>
+            <p className="text-muted-foreground mb-4">
+              Find the best time for everyone to meet
+            </p>
+            <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                {new Date(event.start_date).toLocaleDateString()} - {new Date(event.end_date).toLocaleDateString()}
+              </div>
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                {event.start_time} - {event.end_time}
+              </div>
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                {participantAvailability.length} participants
+              </div>
+            </div>
+          </div>
 
-    if (event.start_date === event.end_date) {
-      return start.toLocaleDateString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
-    } else {
-      return `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
-    }
-  };
+          <ParticipantNameEntry
+            eventTitle={event.title}
+            onNameSubmit={handleJoinAsParticipant}
+            isLoading={isJoining}
+          />
+        </div>
+      </AppShell>
+    );
+  }
 
+  // Main grid interface
   return (
     <AppShell>
-      <div className="max-w-6xl mx-auto">
-        {/* Event Header */}
-        <div className="mb-8">
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground mb-2">
-                {event.title}
-              </h1>
-              {event.description && (
-                <p className="text-muted-foreground mb-4">
-                  {event.description}
-                </p>
-              )}
-            </div>
+      <div className="max-w-7xl mx-auto">
+        {/* Header with title and actions */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">{event.title}</h1>
+            <p className="text-muted-foreground">
+              Welcome, {currentParticipant.name}! Click and drag to set your availability.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setShowChatWindow(true)}
+              className="flex items-center gap-2"
+            >
+              <MessageSquare className="h-4 w-4" />
+              Chat Assistant
+            </Button>
 
             <Button
               variant="outline"
@@ -207,221 +254,34 @@ export default function EventPage({ params, searchParams }: EventPageProps) {
               className="flex items-center gap-2"
             >
               <Share2 className="h-4 w-4" />
-              Share
+              Share Link
             </Button>
-          </div>
 
-          {/* Event Details */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <Calendar className="h-5 w-5 text-primary" />
-                  <div>
-                    <div className="font-medium">Date Range</div>
-                    <div className="text-sm text-muted-foreground">
-                      {formatEventDate()}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <Clock className="h-5 w-5 text-primary" />
-                  <div>
-                    <div className="font-medium">Duration</div>
-                    <div className="text-sm text-muted-foreground">
-                      {event.duration_minutes} minutes
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <Users className="h-5 w-5 text-primary" />
-                  <div>
-                    <div className="font-medium">Participants</div>
-                    <div className="text-sm text-muted-foreground">
-                      {participants.length} joined
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <Settings className="h-5 w-5 text-primary" />
-                  <div>
-                    <div className="font-medium">Timezone</div>
-                    <div className="text-sm text-muted-foreground">
-                      {getTimezoneFriendlyLabel(event.timezone)}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            {/* Future organizer controls */}
+            {isOrganizer && (
+              <Button className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4" />
+                Finalize Meeting
+              </Button>
+            )}
           </div>
         </div>
 
-        {/* Join as Participant */}
-        {!currentParticipant && !isOrganizer && (
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <UserPlus className="h-5 w-5" />
-                Join This Meeting
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {!showJoinForm ? (
-                <div className="text-center py-4">
-                  <p className="text-muted-foreground mb-4">
-                    To respond to time proposals, please join this meeting.
-                  </p>
-                  <Button onClick={() => setShowJoinForm(true)}>
-                    Join Meeting
-                  </Button>
-                </div>
-              ) : (
-                <div className="max-w-md mx-auto">
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-2">
-                        Your Name *
-                      </label>
-                      <input
-                        type="text"
-                        value={newParticipantName}
-                        onChange={(e) => setNewParticipantName(e.target.value)}
-                        className="w-full p-3 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
-                        placeholder="John Doe"
-                        required
-                      />
-                    </div>
+        {/* Main availability grid */}
+        <AvailabilityGrid
+          event={event}
+          currentParticipant={currentParticipant}
+          participants={participantAvailability}
+          onAvailabilityChange={handleAvailabilityChange}
+        />
 
-                    <div>
-                      <label className="block text-sm font-medium mb-2">
-                        Email (optional)
-                      </label>
-                      <input
-                        type="email"
-                        value={newParticipantEmail}
-                        onChange={(e) => setNewParticipantEmail(e.target.value)}
-                        className="w-full p-3 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
-                        placeholder="john@company.com"
-                      />
-                    </div>
-
-                    <div className="flex gap-3">
-                      <Button
-                        onClick={handleJoinAsParticipant}
-                        disabled={!newParticipantName.trim()}
-                        className="flex-1"
-                      >
-                        Join Meeting
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => setShowJoinForm(false)}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Navigation Tabs */}
-        {(currentParticipant || isOrganizer) && (
-          <div className="flex gap-4 mb-6 border-b border-border">
-            <Button
-              variant="ghost"
-              onClick={() => setActiveTab('respond')}
-              className={`pb-3 rounded-none border-b-2 ${
-                activeTab === 'respond'
-                  ? 'border-primary text-primary'
-                  : 'border-transparent'
-              }`}
-            >
-              <Users className="h-4 w-4 mr-2" />
-              Respond to Times
-            </Button>
-
-            {isOrganizer && (
-              <Button
-                variant="ghost"
-                onClick={() => setActiveTab('propose')}
-                className={`pb-3 rounded-none border-b-2 ${
-                  activeTab === 'propose'
-                    ? 'border-primary text-primary'
-                    : 'border-transparent'
-                }`}
-              >
-                <Clock className="h-4 w-4 mr-2" />
-                Propose Times
-              </Button>
-            )}
-
-            <Button
-              variant="ghost"
-              onClick={() => setActiveTab('results')}
-              className={`pb-3 rounded-none border-b-2 ${
-                activeTab === 'results'
-                  ? 'border-primary text-primary'
-                  : 'border-transparent'
-              }`}
-            >
-              <BarChart3 className="h-4 w-4 mr-2" />
-              View Results
-            </Button>
-          </div>
-        )}
-
-        {/* Tab Content */}
-        {activeTab === 'respond' && currentParticipant && (
-          <AvailabilityResponder
-            event={event}
-            participant={currentParticipant}
-            timeSlots={timeSlots}
-            onResponseUpdated={loadEventData}
-          />
-        )}
-
-        {activeTab === 'propose' && isOrganizer && (
-          <TimeSlotProposer
-            event={event}
-            onTimeSlotsUpdated={loadEventData}
-          />
-        )}
-
-        {activeTab === 'results' && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />
-                Meeting Analysis
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8 text-muted-foreground">
-                <BarChart3 className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p>Results and scoring dashboard coming soon...</p>
-                <p className="text-sm">This will show optimal times and participant responses.</p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {/* LLM Chat Window */}
+        <LLMChatWindow
+          participantName={currentParticipant.name}
+          isOpen={showChatWindow}
+          onClose={() => setShowChatWindow(false)}
+          onAvailabilityUpdate={handleLLMAvailabilityUpdate}
+        />
       </div>
     </AppShell>
   );

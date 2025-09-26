@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
       relationship_context
     } = body;
 
-    if (!title || !organizer_name || !start_date || !end_date || !start_time || !end_time) {
+    if (!title || !start_date || !end_date || !start_time || !end_time) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -34,20 +34,20 @@ export async function POST(request: NextRequest) {
       .from('events')
       .insert([{
         title,
-        description,
-        organizer_name,
-        organizer_email,
+        description: description || '',
+        organizer_name: organizer_name || 'Anonymous Organizer',
+        organizer_email: organizer_email || '',
         start_date,
         end_date,
         start_time,
         end_time,
         timezone,
         duration_minutes,
-        allow_anonymous,
-        max_participants,
-        meeting_importance,
-        meeting_type,
-        relationship_context
+        allow_anonymous: allow_anonymous ?? true,
+        max_participants: max_participants ?? 50,
+        meeting_importance: meeting_importance || 'medium',
+        meeting_type: meeting_type || 'general',
+        relationship_context: relationship_context || {}
       }])
       .select()
       .single();
