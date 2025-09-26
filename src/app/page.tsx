@@ -1,9 +1,18 @@
+"use client";
+
+import React, { useState } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
-import { Calendar, MessageSquare, Brain, Users, Clock, Zap } from 'lucide-react';
+import { OptionalLoginPrompt, useOptionalLoginPrompt } from '@/components/auth/OptionalLoginPrompt';
+import { QuickSignup } from '@/components/auth/QuickSignup';
+import { useOptionalAuth } from '@/hooks/useOptionalAuth';
+import { Calendar, MessageSquare, Brain, Users, Clock, Zap, ArrowRight } from 'lucide-react';
 
 export default function Home() {
+  const [showSignup, setShowSignup] = useState(false);
+  const { isAuthenticated, suggestAccountCreation } = useOptionalAuth();
+  const { shouldShowPrompt, dismissPrompt } = useOptionalLoginPrompt();
   return (
     <AppShell>
       {/* Hero Section */}
@@ -16,7 +25,7 @@ export default function Home() {
           Find the perfect time for everyone, effortlessly.
         </p>
         <div className="flex gap-4 justify-center">
-          <Button size="lg" className="text-lg">
+          <Button size="lg" className="text-lg" onClick={() => window.location.href = '/create'}>
             <Calendar className="mr-2 h-5 w-5" />
             Create Event
           </Button>
@@ -25,6 +34,20 @@ export default function Home() {
             Join Event
           </Button>
         </div>
+
+        {/* Authenticated user dashboard link */}
+        {isAuthenticated && (
+          <div className="mt-6">
+            <Button
+              variant="outline"
+              onClick={() => window.location.href = '/dashboard'}
+              className="flex items-center gap-2"
+            >
+              View My Events
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Features Section */}
@@ -48,7 +71,7 @@ export default function Home() {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground">
-              Just say "I can't do Tuesday mornings" and our AI will understand and suggest alternatives.
+              Just say &quot;I can&apos;t do Tuesday mornings&quot; and our AI will understand and suggest alternatives.
             </p>
           </CardContent>
         </Card>
@@ -66,9 +89,22 @@ export default function Home() {
         </Card>
       </div>
 
+      {/* Optional Login Prompt */}
+      {!isAuthenticated && suggestAccountCreation() && shouldShowPrompt('multiple_events') && (
+        <div className="mb-8">
+          <OptionalLoginPrompt
+            trigger="multiple_events"
+            onDismiss={() => dismissPrompt('multiple_events')}
+            onCreateAccount={() => setShowSignup(true)}
+          />
+        </div>
+      )}
+
       {/* Recent Events */}
       <div className="mb-8">
-        <h2 className="text-2xl font-semibold text-foreground mb-6">Recent Events</h2>
+        <h2 className="text-2xl font-semibold text-foreground mb-6">
+          {isAuthenticated ? 'Your Recent Events' : 'Recent Events'}
+        </h2>
         <div className="grid md:grid-cols-2 gap-4">
           <Card>
             <CardHeader>
@@ -126,10 +162,20 @@ export default function Home() {
         <p className="text-muted-foreground mb-6">
           Experience the future of group scheduling with AI assistance.
         </p>
-        <Button size="lg">
-          Get Started Now
+        <Button
+          size="lg"
+          onClick={() => isAuthenticated ? window.location.href = '/dashboard' : setShowSignup(true)}
+        >
+          {isAuthenticated ? 'Go to Dashboard' : 'Get Started Now'}
         </Button>
       </div>
+
+      {/* Quick Signup Modal */}
+      <QuickSignup
+        isOpen={showSignup}
+        onClose={() => setShowSignup(false)}
+        onSuccess={() => console.log('Account created successfully!')}
+      />
     </AppShell>
   );
 }

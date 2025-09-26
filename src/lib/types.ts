@@ -1,3 +1,24 @@
+// User Profile Types (for optional authentication)
+export interface UserProfile {
+  id: string;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+  display_name?: string;
+  timezone?: string;
+  email?: string;
+  avatar_url?: string;
+  preferred_meeting_duration?: number;
+  default_availability_hours?: {
+    start: string;
+    end: string;
+  };
+  notification_preferences?: {
+    email_reminders: boolean;
+    event_updates: boolean;
+  };
+}
+
 export interface Event {
   id: string;
   created_at: string;
@@ -6,6 +27,7 @@ export interface Event {
   description?: string;
   organizer_name: string;
   organizer_email?: string;
+  organizer_user_id?: string; // Optional link to authenticated user
   start_date: string;
   end_date: string;
   start_time: string;
@@ -30,10 +52,13 @@ export interface Participant {
   name: string;
   email?: string;
   timezone?: string;
+  user_id?: string; // Optional link to authenticated user
+  session_id?: string; // For anonymous participants
   role: 'organizer' | 'required' | 'optional';
   priority_weight: number;
   has_responded: boolean;
   last_updated: string;
+  is_anonymous: boolean;
 }
 
 export interface Availability {
