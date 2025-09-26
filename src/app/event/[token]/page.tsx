@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, use } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
 import { AvailabilityGrid } from '@/components/AvailabilityGrid';
 import { ParticipantNameEntry } from '@/components/ParticipantNameEntry';
@@ -13,14 +13,16 @@ import {
   Clock,
   MessageSquare,
   Share2,
-  CheckCircle
+  CheckCircle,
+  Copy,
+  X
 } from 'lucide-react';
 import { Event, Participant } from '@/lib/types';
 
 interface EventPageProps {
-  params: {
+  params: Promise<{
     token: string;
-  };
+  }>;
 }
 
 interface ParticipantAvailability {
@@ -32,6 +34,7 @@ interface ParticipantAvailability {
 }
 
 export default function EventPage({ params }: EventPageProps) {
+  const { token } = use(params);
   const [event, setEvent] = useState<Event | null>(null);
   const [currentParticipant, setCurrentParticipant] = useState<Participant | null>(null);
   const [participantAvailability, setParticipantAvailability] = useState<ParticipantAvailability[]>([]);
@@ -41,11 +44,12 @@ export default function EventPage({ params }: EventPageProps) {
   const [showChatWindow, setShowChatWindow] = useState(false);
   const [isOrganizer] = useState(false);
   const [showShareInfo, setShowShareInfo] = useState(false);
+  const [showParticipantList, setShowParticipantList] = useState(false);
 
 
   useEffect(() => {
     loadEventData();
-  }, [params.token]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadEventData = async () => {
     try {
@@ -57,7 +61,7 @@ export default function EventPage({ params }: EventPageProps) {
       if (!eventsResponse.ok) throw new Error('Failed to fetch events');
 
       const { events } = await eventsResponse.json();
-      const foundEvent = events.find((e: Event) => e.share_token === params.token);
+      const foundEvent = events.find((e: Event) => e.share_token === token);
 
       if (!foundEvent) {
         throw new Error('Event not found');
@@ -149,7 +153,7 @@ export default function EventPage({ params }: EventPageProps) {
 
   const copyShareLink = async () => {
     try {
-      const shareUrl = `${window.location.origin}/event/${params.token}`;
+      const shareUrl = `${window.location.origin}/event/${token}`;
       await navigator.clipboard.writeText(shareUrl);
       setShowShareInfo(true);
       setTimeout(() => setShowShareInfo(false), 3000);
@@ -160,7 +164,7 @@ export default function EventPage({ params }: EventPageProps) {
 
   const copyEventCode = async () => {
     try {
-      await navigator.clipboard.writeText(params.token);
+      await navigator.clipboard.writeText(token);
       setShowShareInfo(true);
       setTimeout(() => setShowShareInfo(false), 3000);
     } catch (err) {
@@ -231,58 +235,36 @@ export default function EventPage({ params }: EventPageProps) {
     <AppShell>
       <div className="max-w-7xl mx-auto">
 
-        {/* Share Information Panel */}
-        {showShareInfo && (
-          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg dark:bg-blue-950 dark:border-blue-800">
-            <h3 className="font-semibold mb-3 text-blue-800 dark:text-blue-200">Share this event with others</h3>
-            <div className="space-y-3">
-              <div>
-                <label className="block text-sm font-medium mb-1 text-blue-700 dark:text-blue-300">Event Code (Quick Share)</label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={params.token}
-                    readOnly
-                    className="flex-1 p-2 border border-blue-300 rounded bg-white text-center font-mono"
-                  />
-                  <Button size="sm" onClick={copyEventCode} variant="outline">
-                    Copy Code
-                  </Button>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1 text-blue-700 dark:text-blue-300">Full Link</label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={`${window.location.origin}/event/${params.token}`}
-                    readOnly
-                    className="flex-1 p-2 border border-blue-300 rounded bg-white text-xs font-mono"
-                  />
-                  <Button size="sm" onClick={copyShareLink} variant="outline">
-                    Copy Link
-                  </Button>
-                </div>
-              </div>
-            </div>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setShowShareInfo(false)}
-              className="mt-3 text-blue-600 hover:text-blue-800"
-            >
-              Close
-            </Button>
-          </div>
-        )}
-
         {/* Main availability grid */}
         <AvailabilityGrid
           event={event}
           currentParticipant={currentParticipant}
           participants={participantAvailability}
           onAvailabilityChange={handleAvailabilityChange}
-          onShareClick={() => setShowShareInfo(!showShareInfo)}
+          onShareClick={() => {
+            if (showShareInfo) {
+              // If share popup is already showing, close it (restart state)
+              setShowShareInfo(false);
+            } else {
+              // Show share popup and hide participant list
+              setShowShareInfo(true);
+              setShowParticipantList(false);
+            }
+          }}
+          showShareInfo={showShareInfo}
+          onCopyShareLink={copyShareLink}
+          shareUrl={`${window.location.origin}/event/${token}`}
+          onKatzClick={() => {
+            if (showParticipantList) {
+              // If participant list is already showing, close it (restart state)
+              setShowParticipantList(false);
+            } else {
+              // Show participant list and hide share popup
+              setShowParticipantList(true);
+              setShowShareInfo(false);
+            }
+          }}
+          showParticipantList={showParticipantList}
         />
 
         {/* Action buttons below grid */}

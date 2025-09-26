@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { User, Clock, Users, Calendar, Share2 } from 'lucide-react';
+import { User, Clock, Users, Calendar, Share2, Copy, X } from 'lucide-react';
 import { ParticipantIcon } from '@/components/icons/ParticipantIcon';
 
 interface TimeSlot {
@@ -38,6 +38,11 @@ interface AvailabilityGridProps {
   participants: ParticipantAvailability[];
   onAvailabilityChange?: (participantId: string, timeSlot: TimeSlot, status: 'available' | 'unavailable' | 'maybe') => void;
   onShareClick?: () => void;
+  showShareInfo?: boolean;
+  onCopyShareLink?: () => void;
+  shareUrl?: string;
+  onKatzClick?: () => void;
+  showParticipantList?: boolean;
 }
 
 export function AvailabilityGrid({
@@ -45,7 +50,12 @@ export function AvailabilityGrid({
   currentParticipant,
   participants = [],
   onAvailabilityChange,
-  onShareClick
+  onShareClick,
+  showShareInfo = false,
+  onCopyShareLink,
+  shareUrl,
+  onKatzClick,
+  showParticipantList = false
 }: AvailabilityGridProps) {
   const [dragState, setDragState] = useState<{
     isDragging: boolean;
@@ -219,40 +229,96 @@ export function AvailabilityGrid({
     <div className="w-full max-w-4xl mx-auto">
       <Card className="border-0 shadow-lg">
         <CardHeader className="pb-4">
-          <div className="relative">
+          <div className="space-y-4">
+            {/* Title box, Share popup, or Participant list */}
             <div className="text-center">
-              <div className="bg-primary/10 border border-primary/20 rounded-lg p-6 inline-block">
-                <CardTitle className="text-5xl font-bold text-center">
-                  {event.title}
-                  {currentParticipant && (
-                    <>
-                      <span className="text-2xl text-muted-foreground"> for </span>
-                      {currentParticipant.name}
-                    </>
-                  )}
-                </CardTitle>
-              </div>
+              {showParticipantList ? (
+                <div className="bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-2 w-full flex items-center h-10">
+                  <span className="text-sm text-gray-600 dark:text-gray-400 flex-shrink-0 mr-2">All Katz {'→'}</span>
+                  <div className="flex items-center gap-2 overflow-x-auto flex-1 mr-2">
+                    {participants.map((participant) => (
+                      <div key={participant.participantId} className="flex items-center gap-1 text-sm whitespace-nowrap flex-shrink-0">
+                        <ParticipantIcon className="h-3 w-3" />
+                        <span className="text-xs">{participant.participantName}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={onKatzClick}
+                    className="p-1 h-6 w-6 flex-shrink-0"
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              ) : showShareInfo ? (
+                <div className="bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-2 w-full flex items-center h-10">
+                  <span className="text-sm text-gray-600 dark:text-gray-400 flex-shrink-0 mr-2">Share this link</span>
+                  <div className="flex items-center gap-1 flex-1 mr-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={onCopyShareLink}
+                      className="p-1 h-6 w-6 flex-shrink-0"
+                    >
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                    <input
+                      type="text"
+                      value={shareUrl || ''}
+                      readOnly
+                      className="p-1 border rounded bg-white dark:bg-gray-700 text-xs font-mono flex-1 h-6"
+                    />
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={onShareClick}
+                    className="p-1 h-6 w-6 flex-shrink-0"
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="bg-primary/10 border border-primary/20 rounded-lg px-4 py-2 w-full flex items-center justify-center h-10">
+                  <CardTitle className="text-lg font-bold text-center">
+                    {event.title}
+                    {currentParticipant && (
+                      <>
+                        <span className="text-lg text-muted-foreground"> for </span>
+                        {currentParticipant.name}
+                      </>
+                    )}
+                  </CardTitle>
+                </div>
+              )}
             </div>
 
-            {/* Share button in top left */}
-            {onShareClick && (
-              <div className="absolute top-0 left-0">
+            {/* Share button and Katz count below title */}
+            <div className="flex justify-center gap-4">
+              {onShareClick && (
                 <Button
                   variant="outline"
                   onClick={onShareClick}
-                  className="flex items-center gap-2 w-40"
+                  className={`flex items-center gap-2 flex-1 max-w-xs ${
+                    showShareInfo
+                      ? 'border-primary bg-primary/10'
+                      : 'border-gray-300 dark:border-gray-600 hover:border-gray-400'
+                  }`}
                 >
                   <Share2 className="h-4 w-4" />
-                  Share Event
+                  Call More Katz
                 </Button>
-              </div>
-            )}
-
-            {/* Katz count in top right */}
-            <div className="absolute top-0 right-0">
+              )}
               <Button
                 variant="outline"
-                className="flex items-center gap-2 cursor-default w-40"
+                onClick={onKatzClick}
+                className={`flex items-center gap-2 flex-1 max-w-xs ${
+                  showParticipantList
+                    ? 'border-primary bg-primary/10'
+                    : 'border-gray-300 dark:border-gray-600 hover:border-gray-400'
+                }`}
               >
                 <ParticipantIcon className="h-4 w-4" />
                 {participants.length} Katz
