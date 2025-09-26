@@ -3,23 +3,29 @@
 import React, { useState } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
 import { Button } from '@/components/ui/Button';
-import { Calendar, Users } from 'lucide-react';
+import { Calendar, Users, UserPlus } from 'lucide-react';
+import { ParticipantIcon } from '@/components/icons/ParticipantIcon';
+import { QuickSignup } from '@/components/auth/QuickSignup';
 
 export default function Home() {
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [joinInput, setJoinInput] = useState('');
+  const [showSignup, setShowSignup] = useState(false);
 
   return (
     <AppShell>
       <div className="text-center max-w-2xl mx-auto">
+        <div className="flex justify-center mb-8">
+          <ParticipantIcon className="text-primary" width={120} height={148} />
+        </div>
         <h1 className="text-5xl md:text-7xl font-bold text-foreground mb-6">
-          Herding
+          HerdingKatz
         </h1>
         <p className="text-xl text-muted-foreground mb-12">
-          Simple drag-and-drop meeting scheduling for teams
+          A simple app to help herd up
         </p>
 
-        <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto">
+        <div className="flex flex-col gap-4 justify-center max-w-md mx-auto">
           <Button
             size="lg"
             className="text-lg py-4 px-8"
@@ -36,6 +42,15 @@ export default function Home() {
           >
             <Users className="mr-2 h-5 w-5" />
             Join Event
+          </Button>
+          <Button
+            variant="outline"
+            size="lg"
+            className="text-lg py-4 px-8"
+            onClick={() => setShowSignup(true)}
+          >
+            <UserPlus className="mr-2 h-5 w-5" />
+            Sign Up
           </Button>
         </div>
       </div>
@@ -89,6 +104,13 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {/* Quick Signup Modal */}
+      <QuickSignup
+        isOpen={showSignup}
+        onClose={() => setShowSignup(false)}
+        onSuccess={() => console.log('Account created successfully!')}
+      />
     </AppShell>
   );
 }

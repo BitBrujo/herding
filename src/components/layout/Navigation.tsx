@@ -1,106 +1,49 @@
 "use client";
 
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
-import { Calendar, MessageSquare, Settings, Home, Plus } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
-import { UserMenu, AnonymousUserPrompt } from '@/components/auth/UserMenu';
-import { QuickSignup } from '@/components/auth/QuickSignup';
-import { useOptionalAuth } from '@/hooks/useOptionalAuth';
+import { ParticipantIcon } from '@/components/icons/ParticipantIcon';
 
 export function Navigation() {
-  const [showSignup, setShowSignup] = useState(false);
-  const { isAuthenticated, loading } = useOptionalAuth();
-
   return (
-    <>
-      <nav className="border-b border-border bg-card">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <Link href="/" className="flex items-center space-x-2">
-              <Calendar className="h-8 w-8 text-primary" />
-              <span className="text-xl font-semibold text-foreground">
-                Herding Katz
-              </span>
-            </Link>
-
-            {/* Navigation Links */}
-            <div className="hidden md:flex items-center space-x-6">
-              <Link
-                href="/"
-                className="flex items-center space-x-2 text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <Home className="h-4 w-4" />
-                <span>Home</span>
-              </Link>
-
-              {/* Dashboard link for authenticated users */}
-              {isAuthenticated && (
-                <Link
-                  href="/dashboard"
-                  className="flex items-center space-x-2 text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <Calendar className="h-4 w-4" />
-                  <span>My Events</span>
-                </Link>
-              )}
-
-              <Link
-                href="/create"
-                className="flex items-center space-x-2 text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <Plus className="h-4 w-4" />
-                <span>Create Event</span>
-              </Link>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex items-center space-x-3">
-              {/* Notification/Messages (hidden for now) */}
-              <button className="hidden p-2 text-muted-foreground hover:text-foreground transition-colors">
-                <MessageSquare className="h-5 w-5" />
-              </button>
-
-              {/* Settings (hidden for now) */}
-              <button className="hidden p-2 text-muted-foreground hover:text-foreground transition-colors">
-                <Settings className="h-5 w-5" />
-              </button>
-
-              {/* Join Event Button (for anonymous users) */}
-              <Button
-                variant="outline"
-                onClick={() => {
-                  // TODO: Implement join event modal or navigation
-                  const eventCode = prompt('Enter event code or share link:');
-                  if (eventCode) {
-                    // Handle join event logic
-                    console.log('Joining event:', eventCode);
-                  }
-                }}
-              >
-                Join Event
-              </Button>
-
-              {/* Auth UI */}
-              {loading ? (
-                <div className="w-20 h-10 bg-muted/50 rounded-lg animate-pulse"></div>
-              ) : isAuthenticated ? (
-                <UserMenu />
-              ) : (
-                <AnonymousUserPrompt onSignUp={() => setShowSignup(true)} />
-              )}
-            </div>
-          </div>
+    <nav className="border-b border-border bg-card">
+      <div className="container mx-auto px-4">
+        <div className="flex items-center justify-center h-16">
+          {/* Logo */}
+          <Link href="/" className="flex items-center space-x-2">
+            <svg
+              width="32"
+              height="32"
+              viewBox="0 0 240 238"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-8 w-8 text-primary"
+            >
+              <path
+                fillRule="evenodd"
+                clipRule="evenodd"
+                d="M213.467 10V24.5332H198.933V39.0669H184.4V24.5332H169.867V10H155.333V68.1333H140.8V53.6001H126.267V39.0669H68.1333V53.6001H53.6001V68.1333H39.0667V82.6665H24.5333V24.5332H39.0667V10H24.5333V24.5332H10V82.6665H24.5333V140.8H39.0667V213.467H53.6001V228H82.6667V213.467H68.1333V140.8H82.6667V126.267H97.2V111.733H111.733V126.267H126.267V140.8H140.8V155.333H155.333V213.467H169.867V228H198.933V213.467H184.4V169.867H198.933V126.267H213.467V97.2002H228V10H213.467ZM184.4 68.1333H169.867V53.6001H184.4V68.1333ZM213.467 68.1333H198.933V53.6001H213.467V68.1333Z"
+                fill="currentColor"
+              />
+            </svg>
+            <svg
+              width="120"
+              height="55"
+              viewBox="0 0 160 73"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              className="text-foreground"
+            >
+              <path
+                fillRule="evenodd"
+                clipRule="evenodd"
+                d="M91.6512 16.0849H97.4861V10.25H91.6512L91.6513 16.0847H85.8164L85.8164 21.9011H79.9816V27.736H85.8164L85.8164 21.9196H91.6513L91.6512 16.0849ZM144.11 39.4059V45.2408H149.945V56.9106H144.11V51.0757H132.44V45.2408H126.605V39.4059H114.935V45.2408H109.101V39.4059H97.4308V45.2408H91.5959V39.4059H79.9815V45.2408H74.1467V39.4059H62.4769V45.2408H56.642V39.4059H44.9723V45.2408H39.1744V62.727H27.5046V56.8921H21.6697V51.0572H15.8349V45.2223H10V33.5526H15.8349V27.7177H21.6697V21.8829H27.5046V16.048H39.1744V27.7177H44.9907V21.9011H50.8256V27.736H45.0092V33.5526H56.679V27.7177H62.4954V21.9011H68.3118V16.0847H74.1466L74.1466 10.25H79.9815V16.0849H74.1466L74.1466 21.9196H68.3302V27.736H62.5138V33.5526H74.1836V27.7177H79.9815V33.5526H91.6513V27.7177H97.4677V21.9011H103.303L103.302 16.0847H109.137V21.9196H103.302L103.303 27.736H97.4861V33.5526H109.156V27.7177H114.972V21.9011H120.807V27.736H114.991V33.5526H126.661V27.7177H132.495V21.8829H144.165V16.048H150V27.7177H144.165V33.5526H138.33V39.3875H144.11V39.4059ZM33.3395 39.4059H21.6697V45.2408H27.5046V51.0757H33.3395V39.4059ZM120.807 51.057H114.972V45.2222H120.807V51.057ZM103.302 56.892H109.137V51.0571H103.302V56.892ZM91.6512 62.727H97.4861V56.8921H91.6512V62.727ZM103.303 51.057H97.4677V45.2222H103.303V51.057ZM91.6513 56.892H85.8164V51.0571H91.6513V56.892ZM85.8164 51.057H79.9816V45.2222H85.8164V51.057ZM79.9815 62.727H74.1466V56.8921H79.9815V62.727ZM74.1466 56.892H68.3118V51.0571H74.1466V56.892ZM68.3302 51.057H62.4954V45.2222H68.3302V51.057ZM56.6606 56.892H50.8257V51.0571H56.6606V56.892ZM50.8257 21.9196H56.6606V16.0847H50.8257V21.9196ZM50.8256 51.057H44.9907V45.2222H50.8256V51.057Z"
+                fill="currentColor"
+              />
+            </svg>
+          </Link>
         </div>
-      </nav>
-
-      {/* Quick Signup Modal */}
-      <QuickSignup
-        isOpen={showSignup}
-        onClose={() => setShowSignup(false)}
-        onSuccess={() => console.log('Account created successfully!')}
-      />
-    </>
+      </div>
+    </nav>
   );
 }

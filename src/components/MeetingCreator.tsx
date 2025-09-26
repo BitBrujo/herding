@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Calendar, Clock, MapPin } from 'lucide-react';
+import { ParticipantIcon } from '@/components/icons/ParticipantIcon';
 import { COMMON_TIMEZONES, detectUserTimezone } from '@/lib/timezone-utils';
 
 interface MeetingData {
@@ -90,9 +91,9 @@ export function MeetingCreator({ onMeetingCreated, onCancel }: MeetingCreatorPro
   return (
     <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Calendar className="h-5 w-5" />
-          Create New Meeting
+        <CardTitle className="flex items-center justify-center gap-3 text-3xl">
+          <ParticipantIcon className="h-8 w-8 text-primary" />
+          Create New Herd
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -106,7 +107,7 @@ export function MeetingCreator({ onMeetingCreated, onCancel }: MeetingCreatorPro
           {/* Event Name */}
           <div>
             <label className="block text-sm font-medium mb-2">
-              Event Name *
+              Herd Name *
             </label>
             <input
               type="text"

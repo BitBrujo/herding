@@ -206,32 +206,20 @@ export default function EventPage({ params }: EventPageProps) {
         <div className="max-w-4xl mx-auto">
           {/* Event Header */}
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-2">
+            <h1 className="text-5xl font-bold text-foreground mb-2">
               {event.title}
             </h1>
-            <p className="text-muted-foreground mb-4">
-              Find the best time for everyone to meet
-            </p>
-            <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
-                {new Date(event.start_date).toLocaleDateString()} - {new Date(event.end_date).toLocaleDateString()}
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                {event.start_time} - {event.end_time}
-              </div>
-              <div className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                {participantAvailability.length} participants
-              </div>
-            </div>
           </div>
 
           <ParticipantNameEntry
             eventTitle={event.title}
             onNameSubmit={handleJoinAsParticipant}
             isLoading={isJoining}
+            startDate={event.start_date}
+            endDate={event.end_date}
+            startTime={event.start_time}
+            endTime={event.end_time}
+            participantCount={participantAvailability.length}
           />
         </div>
       </AppShell>

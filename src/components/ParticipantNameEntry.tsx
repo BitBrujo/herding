@@ -3,18 +3,29 @@
 import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { UserPlus, ArrowRight } from 'lucide-react';
+import { UserPlus, ArrowRight, Calendar, Clock, Users } from 'lucide-react';
+import { ParticipantIcon } from '@/components/icons/ParticipantIcon';
 
 interface ParticipantNameEntryProps {
   eventTitle: string;
   onNameSubmit: (name: string) => void;
   isLoading?: boolean;
+  startDate: string;
+  endDate: string;
+  startTime: string;
+  endTime: string;
+  participantCount: number;
 }
 
 export function ParticipantNameEntry({
   eventTitle,
   onNameSubmit,
-  isLoading = false
+  isLoading = false,
+  startDate,
+  endDate,
+  startTime,
+  endTime,
+  participantCount
 }: ParticipantNameEntryProps) {
   const [name, setName] = useState('');
 
@@ -28,10 +39,6 @@ export function ParticipantNameEntry({
   return (
     <Card className="max-w-md mx-auto">
       <CardHeader className="text-center">
-        <CardTitle className="flex items-center justify-center gap-2">
-          <UserPlus className="h-5 w-5" />
-          Join &quot;{eventTitle}&quot;
-        </CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -70,8 +77,21 @@ export function ParticipantNameEntry({
           </Button>
         </form>
 
-        <div className="mt-4 p-3 bg-muted/30 rounded-lg text-sm text-muted-foreground text-center">
-          <p>No account required • Your name will be visible to other participants</p>
+        <div className="mt-4 p-3 bg-muted/30 rounded-lg text-sm text-muted-foreground">
+          <div className="flex flex-col items-start justify-center gap-3">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-6 w-6" />
+              {new Date(startDate).toLocaleDateString()} - {new Date(endDate).toLocaleDateString()}
+            </div>
+            <div className="flex items-center gap-2">
+              <Clock className="h-6 w-6" />
+              {startTime} - {endTime}
+            </div>
+            <div className="flex items-center gap-2">
+              <ParticipantIcon className="h-6 w-6" />
+              {participantCount} Katz
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>
