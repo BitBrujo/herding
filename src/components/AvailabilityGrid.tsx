@@ -140,23 +140,25 @@ export function AvailabilityGrid({
 
     if (currentParticipant && currentAvailability) {
       if (currentAvailability === 'available') {
-        return `bg-green-${Math.max(2, Math.round(heat.percentage * 5) + 1)}00 border-green-600`;
+        if (heat.percentage > 0.75) return 'bg-pink-600 border-pink-700';
+        if (heat.percentage > 0.5) return 'bg-pink-500 border-pink-600';
+        if (heat.percentage > 0.25) return 'bg-pink-400 border-pink-500';
+        return 'bg-pink-300 border-pink-400';
       } else if (currentAvailability === 'maybe') {
-        return `bg-yellow-${Math.max(2, Math.round(heat.percentage * 5) + 1)}00 border-yellow-600`;
+        return 'bg-pink-200 border-pink-300';
       } else {
-        return 'bg-red-100 border-red-300';
+        return 'bg-gray-100 border-gray-300';
       }
     }
 
-    // Heat map colors for viewing mode
-    if (heat.total === 0) return 'bg-gray-100 border-gray-200';
+    // Heat map colors for viewing mode - pink theme
+    if (heat.total === 0) return 'bg-gray-50 border-gray-200';
 
-    const intensity = Math.max(1, Math.round(heat.percentage * 5));
-    if (heat.percentage > 0.8) return `bg-green-${intensity * 100} border-green-500`;
-    if (heat.percentage > 0.6) return `bg-lime-${intensity * 100} border-lime-500`;
-    if (heat.percentage > 0.4) return `bg-yellow-${intensity * 100} border-yellow-500`;
-    if (heat.percentage > 0.2) return `bg-orange-${intensity * 100} border-orange-500`;
-    return `bg-red-${intensity * 100} border-red-500`;
+    if (heat.percentage > 0.8) return 'bg-pink-600 border-pink-700';
+    if (heat.percentage > 0.6) return 'bg-pink-500 border-pink-600';
+    if (heat.percentage > 0.4) return 'bg-pink-400 border-pink-500';
+    if (heat.percentage > 0.2) return 'bg-pink-300 border-pink-400';
+    return 'bg-pink-100 border-pink-200';
   };
 
   // Handle mouse events for drag selection
