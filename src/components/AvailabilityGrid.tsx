@@ -2,7 +2,9 @@
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
-import { User, Clock, Users, Calendar } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
+import { User, Clock, Users, Calendar, Share2 } from 'lucide-react';
+import { ParticipantIcon } from '@/components/icons/ParticipantIcon';
 
 interface TimeSlot {
   date: string;
@@ -35,13 +37,15 @@ interface AvailabilityGridProps {
   };
   participants: ParticipantAvailability[];
   onAvailabilityChange?: (participantId: string, timeSlot: TimeSlot, status: 'available' | 'unavailable' | 'maybe') => void;
+  onShareClick?: () => void;
 }
 
 export function AvailabilityGrid({
   event,
   currentParticipant,
   participants = [],
-  onAvailabilityChange
+  onAvailabilityChange,
+  onShareClick
 }: AvailabilityGridProps) {
   const [dragState, setDragState] = useState<{
     isDragging: boolean;
@@ -74,7 +78,7 @@ export function AvailabilityGrid({
         const startMinutes = hour === startHour ? startMinute : 0;
         const endMinutes = hour === endHour ? endMinute : 60;
 
-        for (let minute = startMinutes; minute < endMinutes; minute += 30) {
+        for (let minute = startMinutes; minute < endMinutes; minute += 60) {
           slots.push({
             date: dateStr,
             time: `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`,
@@ -212,56 +216,58 @@ export function AvailabilityGrid({
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto">
+    <div className="w-full max-w-4xl mx-auto">
       <Card className="border-0 shadow-lg">
         <CardHeader className="pb-4">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            <CardTitle className="flex items-center gap-2 text-xl">
-              <Calendar className="h-6 w-6" />
-              {event.title}
-            </CardTitle>
-            <div className="flex items-center gap-6 text-sm text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                {participants.length} participants
+          <div className="relative">
+            <div className="text-center">
+              <div className="bg-primary/10 border border-primary/20 rounded-lg p-6 inline-block">
+                <CardTitle className="text-5xl font-bold text-center">
+                  {event.title}
+                  {currentParticipant && (
+                    <>
+                      <span className="text-2xl text-muted-foreground"> for </span>
+                      {currentParticipant.name}
+                    </>
+                  )}
+                </CardTitle>
               </div>
-              {currentParticipant && (
-                <div className="flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  {currentParticipant.name}
-                </div>
-              )}
+            </div>
+
+            {/* Share button in top left */}
+            {onShareClick && (
+              <div className="absolute top-0 left-0">
+                <Button
+                  variant="outline"
+                  onClick={onShareClick}
+                  className="flex items-center gap-2 w-40"
+                >
+                  <Share2 className="h-4 w-4" />
+                  Share Event
+                </Button>
+              </div>
+            )}
+
+            {/* Katz count in top right */}
+            <div className="absolute top-0 right-0">
+              <Button
+                variant="outline"
+                className="flex items-center gap-2 cursor-default w-40"
+              >
+                <ParticipantIcon className="h-4 w-4" />
+                {participants.length} Katz
+              </Button>
             </div>
           </div>
 
-          {/* Legend */}
-          <div className="flex flex-wrap items-center gap-4 text-sm mt-4">
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-green-400 border rounded"></div>
-              <span>High availability</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-yellow-400 border rounded"></div>
-              <span>Some availability</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-red-400 border rounded"></div>
-              <span>Low availability</span>
-            </div>
-            {currentParticipant && (
-              <div className="text-muted-foreground font-medium">
-                💡 Drag to select your availability
-              </div>
-            )}
-          </div>
         </CardHeader>
 
         <CardContent className="p-0">
           <div
             ref={gridRef}
-            className="grid gap-2 select-none overflow-x-auto p-4 bg-gradient-to-br from-background to-muted/20"
+            className="grid gap-1 select-none p-3 bg-gradient-to-br from-background to-muted/20 max-h-[60vh] overflow-auto"
             style={{
-              gridTemplateColumns: `140px repeat(${timeLabels.length}, minmax(80px, 1fr))`,
+              gridTemplateColumns: `100px repeat(${timeLabels.length}, minmax(40px, 1fr))`,
             }}
           >
             {/* Header row with times */}
@@ -269,7 +275,7 @@ export function AvailabilityGrid({
             {timeLabels.map(time => (
               <div
                 key={time}
-                className="text-sm text-center py-3 font-semibold text-foreground border-b-2 border-border sticky top-0 bg-background/90 backdrop-blur-sm"
+                className="text-xs text-center py-1 font-semibold text-foreground border-b border-border sticky top-0 bg-background/90 backdrop-blur-sm"
               >
                 {time}
               </div>
@@ -279,10 +285,9 @@ export function AvailabilityGrid({
           {dates.map(date => (
               <React.Fragment key={date}>
                 {/* Date label */}
-                <div className="text-sm font-semibold py-4 pr-3 text-right border-r-2 border-border bg-muted/40 sticky left-0 z-10">
+                <div className="text-xs font-semibold py-2 pr-2 text-right border-r border-border bg-muted/40 sticky left-0 z-10">
                   {new Date(date).toLocaleDateString('en-US', {
                     weekday: 'short',
-                    month: 'short',
                     day: 'numeric'
                   })}
                 </div>
@@ -296,10 +301,10 @@ export function AvailabilityGrid({
                     <div
                       key={slotKey}
                       className={`
-                        h-16 sm:h-20 border-2 rounded-lg cursor-pointer transition-all duration-200 relative
+                        h-8 border rounded cursor-pointer transition-all duration-150 relative
                         ${getSlotColor(date, time)}
-                        ${hoveredSlot === slotKey ? 'ring-4 ring-blue-300 scale-110 z-20' : ''}
-                        ${currentParticipant ? 'hover:scale-105 hover:shadow-lg' : ''}
+                        ${hoveredSlot === slotKey ? 'ring-2 ring-blue-300 scale-105 z-20' : ''}
+                        ${currentParticipant ? 'hover:scale-102 hover:shadow-sm' : ''}
                         ${dragState.isDragging ? 'pointer-events-none' : ''}
                       `}
                       onMouseDown={() => handleMouseDown(date, time)}
@@ -334,33 +339,7 @@ export function AvailabilityGrid({
           ))}
         </div>
 
-          {/* Enhanced Instructions */}
-          {currentParticipant && (
-            <div className="mt-6 mx-4 mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/50 dark:to-indigo-950/50 rounded-xl border border-blue-200 dark:border-blue-800">
-              <div className="flex items-center gap-3 mb-3">
-                <Clock className="h-5 w-5 text-blue-600" />
-                <span className="font-semibold text-blue-900 dark:text-blue-100">Quick Start Guide</span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                <div className="flex items-start gap-2">
-                  <span className="text-lg">🖱️</span>
-                  <span className="text-blue-800 dark:text-blue-200">Click and drag to select your available times</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-lg">🟢</span>
-                  <span className="text-blue-800 dark:text-blue-200">Green shows your availability</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-lg">🔥</span>
-                  <span className="text-blue-800 dark:text-blue-200">Darker = more people available</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-lg">👀</span>
-                  <span className="text-blue-800 dark:text-blue-200">Hover to see participant details</span>
-                </div>
-              </div>
-            </div>
-          )}
+
         </CardContent>
       </Card>
     </div>

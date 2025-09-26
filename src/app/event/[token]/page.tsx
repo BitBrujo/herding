@@ -230,43 +230,6 @@ export default function EventPage({ params }: EventPageProps) {
   return (
     <AppShell>
       <div className="max-w-7xl mx-auto">
-        {/* Header with title and actions */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">{event.title}</h1>
-            <p className="text-muted-foreground">
-              Welcome, {currentParticipant.name}! Click and drag to set your availability.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              onClick={() => setShowChatWindow(true)}
-              className="flex items-center gap-2"
-            >
-              <MessageSquare className="h-4 w-4" />
-              Chat Assistant
-            </Button>
-
-            <Button
-              variant="outline"
-              onClick={() => setShowShareInfo(!showShareInfo)}
-              className="flex items-center gap-2"
-            >
-              <Share2 className="h-4 w-4" />
-              Share Event
-            </Button>
-
-            {/* Future organizer controls */}
-            {isOrganizer && (
-              <Button className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4" />
-                Finalize Meeting
-              </Button>
-            )}
-          </div>
-        </div>
 
         {/* Share Information Panel */}
         {showShareInfo && (
@@ -319,7 +282,28 @@ export default function EventPage({ params }: EventPageProps) {
           currentParticipant={currentParticipant}
           participants={participantAvailability}
           onAvailabilityChange={handleAvailabilityChange}
+          onShareClick={() => setShowShareInfo(!showShareInfo)}
         />
+
+        {/* Action buttons below grid */}
+        <div className="flex justify-center mt-6 w-full max-w-lg mx-auto">
+          <Button
+            variant="outline"
+            onClick={() => setShowChatWindow(true)}
+            className="flex items-center gap-2 flex-1"
+          >
+            <MessageSquare className="h-4 w-4" />
+            Chat Assistant
+          </Button>
+
+          {/* Future organizer controls */}
+          {isOrganizer && (
+            <Button className="flex items-center gap-2 flex-1 ml-4">
+              <CheckCircle className="h-4 w-4" />
+              Finalize Meeting
+            </Button>
+          )}
+        </div>
 
         {/* LLM Chat Window */}
         <LLMChatWindow
