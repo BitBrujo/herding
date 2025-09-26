@@ -40,6 +40,7 @@ export default function EventPage({ params }: EventPageProps) {
   const [isJoining, setIsJoining] = useState(false);
   const [showChatWindow, setShowChatWindow] = useState(false);
   const [isOrganizer] = useState(false);
+  const [showShareInfo, setShowShareInfo] = useState(false);
 
 
   useEffect(() => {
@@ -150,6 +151,18 @@ export default function EventPage({ params }: EventPageProps) {
     try {
       const shareUrl = `${window.location.origin}/event/${params.token}`;
       await navigator.clipboard.writeText(shareUrl);
+      setShowShareInfo(true);
+      setTimeout(() => setShowShareInfo(false), 3000);
+    } catch (err) {
+      console.error('Failed to copy to clipboard:', err);
+    }
+  };
+
+  const copyEventCode = async () => {
+    try {
+      await navigator.clipboard.writeText(params.token);
+      setShowShareInfo(true);
+      setTimeout(() => setShowShareInfo(false), 3000);
     } catch (err) {
       console.error('Failed to copy to clipboard:', err);
     }
@@ -250,11 +263,11 @@ export default function EventPage({ params }: EventPageProps) {
 
             <Button
               variant="outline"
-              onClick={copyShareLink}
+              onClick={() => setShowShareInfo(!showShareInfo)}
               className="flex items-center gap-2"
             >
               <Share2 className="h-4 w-4" />
-              Share Link
+              Share Event
             </Button>
 
             {/* Future organizer controls */}
@@ -266,6 +279,51 @@ export default function EventPage({ params }: EventPageProps) {
             )}
           </div>
         </div>
+
+        {/* Share Information Panel */}
+        {showShareInfo && (
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg dark:bg-blue-950 dark:border-blue-800">
+            <h3 className="font-semibold mb-3 text-blue-800 dark:text-blue-200">Share this event with others</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium mb-1 text-blue-700 dark:text-blue-300">Event Code (Quick Share)</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={params.token}
+                    readOnly
+                    className="flex-1 p-2 border border-blue-300 rounded bg-white text-center font-mono"
+                  />
+                  <Button size="sm" onClick={copyEventCode} variant="outline">
+                    Copy Code
+                  </Button>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1 text-blue-700 dark:text-blue-300">Full Link</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={`${window.location.origin}/event/${params.token}`}
+                    readOnly
+                    className="flex-1 p-2 border border-blue-300 rounded bg-white text-xs font-mono"
+                  />
+                  <Button size="sm" onClick={copyShareLink} variant="outline">
+                    Copy Link
+                  </Button>
+                </div>
+              </div>
+            </div>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setShowShareInfo(false)}
+              className="mt-3 text-blue-600 hover:text-blue-800"
+            >
+              Close
+            </Button>
+          </div>
+        )}
 
         {/* Main availability grid */}
         <AvailabilityGrid

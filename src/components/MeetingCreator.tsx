@@ -15,7 +15,7 @@ interface MeetingData {
 }
 
 interface MeetingCreatorProps {
-  onMeetingCreated?: (meetingId: string, shareToken: string) => void;
+  onMeetingCreated?: (meetingId: string, shareToken: string, title: string) => void;
   onCancel?: () => void;
 }
 
@@ -78,7 +78,7 @@ export function MeetingCreator({ onMeetingCreated, onCancel }: MeetingCreatorPro
       }
 
       const { event } = await response.json();
-      onMeetingCreated?.(event.id, event.share_token);
+      onMeetingCreated?.(event.id, event.share_token, event.title);
 
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');

@@ -17,9 +17,12 @@ export default function CreatePage() {
   const [createdMeeting, setCreatedMeeting] = useState<CreatedMeeting | null>(null);
   const [copiedToClipboard, setCopiedToClipboard] = useState(false);
 
-  const handleMeetingCreated = (meetingId: string, shareToken: string) => {
-    // Redirect directly to the event grid page for organizer to set availability
-    window.location.href = `/event/${shareToken}?role=organizer&setup=true`;
+  const handleMeetingCreated = (meetingId: string, shareToken: string, title: string) => {
+    setCreatedMeeting({
+      id: meetingId,
+      title: title,
+      shareToken: shareToken
+    });
   };
 
   const handleBackToCreate = () => {
@@ -65,14 +68,36 @@ export default function CreatePage() {
             <CardContent className="space-y-6">
               <div className="p-4 bg-green-50 border border-green-200 rounded-lg dark:bg-green-950 dark:border-green-800">
                 <p className="text-green-800 dark:text-green-200">
-                  Your meeting has been created. Share the link below with participants
-                  so they can respond to your proposed times.
+                  Your meeting "<strong>{createdMeeting.title}</strong>" has been created! Share the codes below with participants.
                 </p>
               </div>
 
-              {/* Participant Share Link */}
+              {/* Short Event Code */}
+              <div className="p-4 border-2 border-primary rounded-lg bg-primary/5">
+                <h3 className="font-semibold mb-3 text-primary">📋 Event Code (Quick Share)</h3>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={createdMeeting.shareToken}
+                    readOnly
+                    className="flex-1 p-3 border border-border rounded-lg bg-background text-lg font-mono text-center"
+                  />
+                  <Button
+                    onClick={() => copyToClipboard(createdMeeting.shareToken)}
+                    variant="default"
+                  >
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copy Code
+                  </Button>
+                </div>
+                <p className="text-sm text-muted-foreground mt-2">
+                  <strong>Quick option:</strong> Participants can enter this code on the home page to join
+                </p>
+              </div>
+
+              {/* Full Share Link */}
               <div>
-                <h3 className="font-medium mb-3">Share with Participants</h3>
+                <h3 className="font-medium mb-3">🔗 Full Share Link</h3>
                 <div className="flex gap-2">
                   <input
                     type="text"
@@ -85,7 +110,7 @@ export default function CreatePage() {
                     variant="outline"
                   >
                     <Copy className="h-4 w-4 mr-2" />
-                    {copiedToClipboard ? 'Copied!' : 'Copy'}
+                    Copy Link
                   </Button>
                   <Button
                     onClick={() => window.open(shareUrl, '_blank')}
@@ -95,7 +120,7 @@ export default function CreatePage() {
                   </Button>
                 </div>
                 <p className="text-sm text-muted-foreground mt-2">
-                  Participants can use this link to view the meeting and respond to proposed times.
+                  Direct link participants can click to join the event immediately
                 </p>
               </div>
 
@@ -129,21 +154,40 @@ export default function CreatePage() {
                 </p>
               </div>
 
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-4">
+                <Button
+                  onClick={() => window.location.href = `/event/${createdMeeting.shareToken}?role=organizer&setup=true`}
+                  className="flex-1"
+                  size="lg"
+                >
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Set Up Your Availability
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleBackToCreate}
+                  size="lg"
+                >
+                  Create Another Event
+                </Button>
+              </div>
+
               {/* Next Steps */}
               <div className="p-4 border border-border rounded-lg">
                 <h3 className="font-medium mb-3">Next Steps</h3>
                 <ol className="space-y-2 text-sm">
                   <li className="flex items-start gap-2">
                     <span className="flex-shrink-0 w-5 h-5 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-medium">1</span>
-                    <span>Use your organizer link to propose specific time slots for the meeting</span>
+                    <span>Click "Set Up Your Availability" above to configure your schedule</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="flex-shrink-0 w-5 h-5 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-medium">2</span>
-                    <span>Share the participant link with everyone who should attend</span>
+                    <span>Share the event code or link with participants</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="flex-shrink-0 w-5 h-5 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-medium">3</span>
-                    <span>Monitor responses and use the scoring dashboard to find the optimal time</span>
+                    <span>Monitor responses and use the heat map to find the optimal time</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="flex-shrink-0 w-5 h-5 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-medium">4</span>
