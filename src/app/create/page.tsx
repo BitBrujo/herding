@@ -18,13 +18,8 @@ export default function CreatePage() {
   const [copiedToClipboard, setCopiedToClipboard] = useState(false);
 
   const handleMeetingCreated = (meetingId: string, shareToken: string) => {
-    // You would typically fetch the meeting details here
-    // For now, we'll use basic info
-    setCreatedMeeting({
-      id: meetingId,
-      title: 'Meeting', // This would come from the actual meeting data
-      shareToken
-    });
+    // Redirect directly to the event grid page for organizer to set availability
+    window.location.href = `/event/${shareToken}?role=organizer&setup=true`;
   };
 
   const handleBackToCreate = () => {
@@ -176,10 +171,10 @@ export default function CreatePage() {
     <AppShell>
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-foreground mb-2">
-          Create New Meeting
+          Create New Event
         </h1>
         <p className="text-muted-foreground">
-          Set up a new meeting and invite participants to find the best time for everyone.
+          Create your event and you&apos;ll immediately set up your availability on a drag-and-drop grid.
         </p>
       </div>
 

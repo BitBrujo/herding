@@ -8,12 +8,10 @@ import { COMMON_TIMEZONES, detectUserTimezone } from '@/lib/timezone-utils';
 
 interface MeetingData {
   title: string;
-  start_date: string;
-  end_date: string;
-  start_time: string;
-  end_time: string;
   timezone: string;
   duration_minutes: number;
+  password?: string;
+  enable_google_calendar: boolean;
 }
 
 interface MeetingCreatorProps {
@@ -24,19 +22,17 @@ interface MeetingCreatorProps {
 export function MeetingCreator({ onMeetingCreated, onCancel }: MeetingCreatorProps) {
   const [formData, setFormData] = useState<MeetingData>({
     title: '',
-    start_date: '',
-    end_date: '',
-    start_time: '09:00',
-    end_time: '17:00',
     timezone: detectUserTimezone(),
-    duration_minutes: 60
+    duration_minutes: 60,
+    password: '',
+    enable_google_calendar: false
   });
 
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleInputChange = (field: keyof MeetingData, value: string | number) => {
+  const handleInputChange = (field: keyof MeetingData, value: string | number | boolean) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -51,15 +47,11 @@ export function MeetingCreator({ onMeetingCreated, onCancel }: MeetingCreatorPro
 
     try {
       // Validate required fields
-      if (!formData.title.trim() || !formData.start_date || !formData.end_date) {
-        throw new Error('Please fill in all required fields');
+      if (!formData.title.trim()) {
+        throw new Error('Please enter an event name');
       }
 
-      if (new Date(formData.end_date) < new Date(formData.start_date)) {
-        throw new Error('End date must be after start date');
-      }
-
-      // Create the meeting with minimal data
+      // Create the meeting with minimal data - dates will be set via grid
       const response = await fetch('/api/meetings', {
         method: 'POST',
         headers: {
@@ -67,11 +59,16 @@ export function MeetingCreator({ onMeetingCreated, onCancel }: MeetingCreatorPro
         },
         body: JSON.stringify({
           ...formData,
-          description: '', // Empty description for now
-          organizer_name: '', // Will be filled when organizer joins
+          description: '',
+          organizer_name: '',
           organizer_email: '',
           meeting_importance: 'medium',
-          meeting_type: 'general'
+          meeting_type: 'general',
+          // Set default date range for grid setup (next 7 days)
+          start_date: new Date().toISOString().split('T')[0],
+          end_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          start_time: '09:00',
+          end_time: '17:00'
         }),
       });
 
@@ -121,62 +118,6 @@ export function MeetingCreator({ onMeetingCreated, onCancel }: MeetingCreatorPro
             />
           </div>
 
-          {/* Date Range */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                Start Date *
-              </label>
-              <input
-                type="date"
-                value={formData.start_date}
-                onChange={(e) => handleInputChange('start_date', e.target.value)}
-                className="w-full p-3 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                End Date *
-              </label>
-              <input
-                type="date"
-                value={formData.end_date}
-                onChange={(e) => handleInputChange('end_date', e.target.value)}
-                className="w-full p-3 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
-                required
-              />
-            </div>
-          </div>
-
-          {/* Time Window */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                Earliest Time
-              </label>
-              <input
-                type="time"
-                value={formData.start_time}
-                onChange={(e) => handleInputChange('start_time', e.target.value)}
-                className="w-full p-3 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                Latest Time
-              </label>
-              <input
-                type="time"
-                value={formData.end_time}
-                onChange={(e) => handleInputChange('end_time', e.target.value)}
-                className="w-full p-3 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
-              />
-            </div>
-          </div>
-
           {/* Meeting Settings */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -189,12 +130,9 @@ export function MeetingCreator({ onMeetingCreated, onCancel }: MeetingCreatorPro
                 onChange={(e) => handleInputChange('duration_minutes', parseInt(e.target.value))}
                 className="w-full p-3 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
               >
-                <option value={15}>15 minutes</option>
                 <option value={30}>30 minutes</option>
                 <option value={60}>1 hour</option>
-                <option value={90}>1.5 hours</option>
                 <option value={120}>2 hours</option>
-                <option value={180}>3 hours</option>
               </select>
             </div>
 
@@ -214,6 +152,38 @@ export function MeetingCreator({ onMeetingCreated, onCancel }: MeetingCreatorPro
                   </option>
                 ))}
               </select>
+            </div>
+          </div>
+
+          {/* Optional Settings */}
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Optional Password
+              </label>
+              <input
+                type="password"
+                value={formData.password}
+                onChange={(e) => handleInputChange('password', e.target.value)}
+                className="w-full p-3 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
+                placeholder="Protect your event with a password"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Leave empty for public access
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                id="google-calendar"
+                checked={formData.enable_google_calendar}
+                onChange={(e) => handleInputChange('enable_google_calendar', e.target.checked)}
+                className="h-4 w-4 text-primary border-border rounded focus:ring-2 focus:ring-primary/20"
+              />
+              <label htmlFor="google-calendar" className="text-sm font-medium">
+                Enable Google Calendar integration
+              </label>
             </div>
           </div>
 

@@ -212,99 +212,101 @@ export function AvailabilityGrid({
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            {event.title} - Availability Grid
-          </CardTitle>
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+    <div className="w-full max-w-6xl mx-auto">
+      <Card className="border-0 shadow-lg">
+        <CardHeader className="pb-4">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <CardTitle className="flex items-center gap-2 text-xl">
+              <Calendar className="h-6 w-6" />
+              {event.title}
+            </CardTitle>
+            <div className="flex items-center gap-6 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                {participants.length} participants
+              </div>
+              {currentParticipant && (
+                <div className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  {currentParticipant.name}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Legend */}
+          <div className="flex flex-wrap items-center gap-4 text-sm mt-4">
             <div className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              {participants.length} participants
+              <div className="w-4 h-4 bg-green-400 border rounded"></div>
+              <span>High availability</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-yellow-400 border rounded"></div>
+              <span>Some availability</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-red-400 border rounded"></div>
+              <span>Low availability</span>
             </div>
             {currentParticipant && (
-              <div className="flex items-center gap-2">
-                <User className="h-4 w-4" />
-                {currentParticipant.name}
+              <div className="text-muted-foreground font-medium">
+                💡 Drag to select your availability
               </div>
             )}
           </div>
-        </div>
+        </CardHeader>
 
-        {/* Legend */}
-        <div className="flex items-center gap-4 text-xs">
-          <div className="flex items-center gap-1">
-            <div className="w-3 h-3 bg-green-400 border rounded"></div>
-            <span>High availability</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-3 h-3 bg-yellow-400 border rounded"></div>
-            <span>Some availability</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-3 h-3 bg-red-400 border rounded"></div>
-            <span>Low availability</span>
-          </div>
-          {currentParticipant && (
-            <div className="text-muted-foreground ml-4">
-              Click and drag to select your availability
-            </div>
-          )}
-        </div>
-      </CardHeader>
-
-      <CardContent>
-        <div
-          ref={gridRef}
-          className="grid gap-1 select-none overflow-x-auto"
-          style={{
-            gridTemplateColumns: `120px repeat(${timeLabels.length}, 60px)`,
-          }}
-        >
-          {/* Header row with times */}
-          <div className="sticky top-0 bg-background"></div>
-          {timeLabels.map(time => (
-            <div
-              key={time}
-              className="text-xs text-center py-2 font-medium text-muted-foreground border-b sticky top-0 bg-background"
-            >
-              {time}
-            </div>
-          ))}
+        <CardContent className="p-0">
+          <div
+            ref={gridRef}
+            className="grid gap-2 select-none overflow-x-auto p-4 bg-gradient-to-br from-background to-muted/20"
+            style={{
+              gridTemplateColumns: `140px repeat(${timeLabels.length}, minmax(80px, 1fr))`,
+            }}
+          >
+            {/* Header row with times */}
+            <div className="sticky top-0 bg-background"></div>
+            {timeLabels.map(time => (
+              <div
+                key={time}
+                className="text-sm text-center py-3 font-semibold text-foreground border-b-2 border-border sticky top-0 bg-background/90 backdrop-blur-sm"
+              >
+                {time}
+              </div>
+            ))}
 
           {/* Grid rows for each date */}
           {dates.map(date => (
-            <React.Fragment key={date}>
-              {/* Date label */}
-              <div className="text-sm font-medium py-3 pr-2 text-right border-r bg-muted/30 sticky left-0">
-                {new Date(date).toLocaleDateString('en-US', {
-                  weekday: 'short',
-                  month: 'short',
-                  day: 'numeric'
-                })}
-              </div>
+              <React.Fragment key={date}>
+                {/* Date label */}
+                <div className="text-sm font-semibold py-4 pr-3 text-right border-r-2 border-border bg-muted/40 sticky left-0 z-10">
+                  {new Date(date).toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric'
+                  })}
+                </div>
 
-              {/* Time slots for this date */}
-              {timeLabels.map(time => {
-                const slotKey = `${date}-${time}`;
-                const tooltip = getTooltipContent(date, time);
+                {/* Time slots for this date */}
+                {timeLabels.map(time => {
+                  const slotKey = `${date}-${time}`;
+                  const tooltip = getTooltipContent(date, time);
 
-                return (
-                  <div
-                    key={slotKey}
-                    className={`
-                      h-12 border-2 rounded cursor-pointer transition-all duration-150
-                      ${getSlotColor(date, time)}
-                      ${hoveredSlot === slotKey ? 'ring-2 ring-blue-300 scale-105' : ''}
-                      ${currentParticipant ? 'hover:scale-105' : ''}
-                    `}
-                    onMouseDown={() => handleMouseDown(date, time)}
-                    onMouseEnter={() => handleMouseEnter(date, time)}
-                    onMouseLeave={() => setHoveredSlot(null)}
-                    title={`${tooltip.date} at ${tooltip.time}\n${tooltip.available.length} available, ${tooltip.maybe.length} maybe\nTotal: ${tooltip.total} participants`}
-                  >
+                  return (
+                    <div
+                      key={slotKey}
+                      className={`
+                        h-16 sm:h-20 border-2 rounded-lg cursor-pointer transition-all duration-200 relative
+                        ${getSlotColor(date, time)}
+                        ${hoveredSlot === slotKey ? 'ring-4 ring-blue-300 scale-110 z-20' : ''}
+                        ${currentParticipant ? 'hover:scale-105 hover:shadow-lg' : ''}
+                        ${dragState.isDragging ? 'pointer-events-none' : ''}
+                      `}
+                      onMouseDown={() => handleMouseDown(date, time)}
+                      onMouseEnter={() => handleMouseEnter(date, time)}
+                      onMouseLeave={() => setHoveredSlot(null)}
+                      title={`${tooltip.date} at ${tooltip.time}\n${tooltip.available.length} available, ${tooltip.maybe.length} maybe\nTotal: ${tooltip.total} participants`}
+                    >
                     {hoveredSlot === slotKey && tooltip.total > 0 && (
                       <div className="relative">
                         <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 bg-black text-white text-xs rounded p-2 z-10 min-w-max">
@@ -332,22 +334,35 @@ export function AvailabilityGrid({
           ))}
         </div>
 
-        {/* Instructions */}
-        {currentParticipant && (
-          <div className="mt-4 p-3 bg-muted/30 rounded-lg text-sm text-muted-foreground">
-            <div className="flex items-center gap-2 mb-2">
-              <Clock className="h-4 w-4" />
-              <span className="font-medium">How to use:</span>
+          {/* Enhanced Instructions */}
+          {currentParticipant && (
+            <div className="mt-6 mx-4 mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/50 dark:to-indigo-950/50 rounded-xl border border-blue-200 dark:border-blue-800">
+              <div className="flex items-center gap-3 mb-3">
+                <Clock className="h-5 w-5 text-blue-600" />
+                <span className="font-semibold text-blue-900 dark:text-blue-100">Quick Start Guide</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                <div className="flex items-start gap-2">
+                  <span className="text-lg">🖱️</span>
+                  <span className="text-blue-800 dark:text-blue-200">Click and drag to select your available times</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-lg">🟢</span>
+                  <span className="text-blue-800 dark:text-blue-200">Green shows your availability</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-lg">🔥</span>
+                  <span className="text-blue-800 dark:text-blue-200">Darker = more people available</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-lg">👀</span>
+                  <span className="text-blue-800 dark:text-blue-200">Hover to see participant details</span>
+                </div>
+              </div>
             </div>
-            <ul className="list-disc list-inside space-y-1 ml-6">
-              <li>Click and drag to select times you&apos;re available</li>
-              <li>Green slots show when you&apos;re available</li>
-              <li>Darker green means more people are available</li>
-              <li>Hover over any slot to see who&apos;s available</li>
-            </ul>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
