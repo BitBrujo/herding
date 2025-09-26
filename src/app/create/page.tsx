@@ -5,7 +5,7 @@ import { AppShell } from '@/components/layout/AppShell';
 import { MeetingCreator } from '@/components/MeetingCreator';
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
-import { CheckCircle, Copy, ExternalLink, ArrowLeft } from 'lucide-react';
+import { CheckCircle, Copy, ExternalLink, ArrowLeft, Calendar } from 'lucide-react';
 
 interface CreatedMeeting {
   id: string;
