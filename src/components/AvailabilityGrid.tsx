@@ -435,7 +435,7 @@ export function AvailabilityGrid({
           {dates.map((date, index) => (
               <React.Fragment key={date}>
                 {/* Date label */}
-                <div className="text-xs font-semibold py-1 px-2 text-center border-r border-border bg-blue-500 sticky left-0 z-10 min-w-[50px] rounded-l-lg relative">
+                <div className="text-xs font-semibold py-1 px-2 text-center border-r border-border bg-blue-500 sticky left-0 z-10 w-[50px] h-8 rounded-l-lg relative flex items-center justify-center">
                   {index === 0 && (
                     <div className="absolute -top-8 left-1/2 transform -translate-x-1/2">
                       <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center border-2 border-white">
