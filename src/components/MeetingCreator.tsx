@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
-import { Calendar, Clock, MapPin, ArrowLeft, X, Gamepad2, ChevronDown, ChevronRight } from 'lucide-react';
+import { Calendar, Clock, MapPin, ChevronDown, ChevronRight } from 'lucide-react';
 import { ParticipantIcon } from '@/components/icons/ParticipantIcon';
 import { COMMON_TIMEZONES, detectUserTimezone } from '@/lib/timezone-utils';
 import { AIRobotButton } from '@/components/AIRobotButton';
@@ -51,13 +51,16 @@ export function MeetingCreator({ onMeetingCreated, onCancel }: MeetingCreatorPro
   };
 
   const handleParameterUpdate = (updates: Record<string, string | number | boolean>) => {
-    setFormData(prev => ({
-      ...prev,
-      ...updates
-    }));
+    console.log('MeetingCreator received parameter updates:', updates);
+    setFormData(prev => {
+      const newData = {
+        ...prev,
+        ...updates
+      };
+      console.log('Updated form data:', newData);
+      return newData;
+    });
   };
-
-
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -189,6 +192,9 @@ export function MeetingCreator({ onMeetingCreated, onCancel }: MeetingCreatorPro
             </Button>
           </div>
 
+          {/* AI Assistant */}
+          <AIRobotButton onParameterUpdate={handleParameterUpdate} />
+
           {/* Options Toggle */}
           <div>
             <Button
@@ -276,8 +282,6 @@ export function MeetingCreator({ onMeetingCreated, onCancel }: MeetingCreatorPro
             </div>
           )}
 
-          {/* AI Robot Help Button */}
-          <AIRobotButton onParameterUpdate={handleParameterUpdate} />
         </form>
       </CardContent>
     </Card>

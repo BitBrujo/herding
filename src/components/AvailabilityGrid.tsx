@@ -343,7 +343,7 @@ export function AvailabilityGrid({
                     {event.title}
                     {currentParticipant && (
                       <>
-                        <span className="text-lg text-blue-200"> for </span>
+                        <span className="text-lg text-blue-200"> with </span>
                         {currentParticipant.name}
                       </>
                     )}
