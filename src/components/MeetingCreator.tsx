@@ -13,6 +13,10 @@ interface MeetingData {
   duration_minutes: number;
   password?: string;
   enable_google_calendar: boolean;
+  start_date: string;
+  start_time: string;
+  end_time: string;
+  max_participants: number;
 }
 
 interface MeetingCreatorProps {
@@ -26,7 +30,11 @@ export function MeetingCreator({ onMeetingCreated, onCancel }: MeetingCreatorPro
     timezone: detectUserTimezone(),
     duration_minutes: 60,
     password: '',
-    enable_google_calendar: false
+    enable_google_calendar: false,
+    start_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    start_time: '09:00',
+    end_time: '19:00',
+    max_participants: 7
   });
 
 
@@ -39,6 +47,7 @@ export function MeetingCreator({ onMeetingCreated, onCancel }: MeetingCreatorPro
       [field]: value
     }));
   };
+
 
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -65,11 +74,8 @@ export function MeetingCreator({ onMeetingCreated, onCancel }: MeetingCreatorPro
           organizer_email: '',
           meeting_importance: 'medium',
           meeting_type: 'general',
-          // Set default date range for grid setup (next 7 days)
-          start_date: new Date().toISOString().split('T')[0],
-          end_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          start_time: '06:00',
-          end_time: '22:00'
+          // Set end date to 7 days from start date
+          end_date: new Date(new Date(formData.start_date).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
         }),
       });
 
@@ -101,13 +107,12 @@ export function MeetingCreator({ onMeetingCreated, onCancel }: MeetingCreatorPro
             {onCancel && (
               <Button
                 type="button"
-                variant="ghost"
+                variant="outline"
                 size="sm"
                 onClick={onCancel}
                 disabled={isSubmitting}
-                className="h-8 w-8 p-0"
               >
-                <X className="h-4 w-4" />
+                Cancel
               </Button>
             )}
           </div>
@@ -161,6 +166,68 @@ export function MeetingCreator({ onMeetingCreated, onCancel }: MeetingCreatorPro
             </select>
           </div>
 
+          {/* Row: Start Date, Time Range, Max Participants */}
+          <div className="flex gap-4 items-end">
+            {/* Start Date */}
+            <div className="flex-1">
+              <label className="block text-sm font-medium mb-2">
+                <Calendar className="inline h-4 w-4 mr-1" />
+                Start Date (7 days from now)
+              </label>
+              <input
+                type="date"
+                value={formData.start_date}
+                onChange={(e) => handleInputChange('start_date', e.target.value)}
+                className="w-full p-3 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
+                required
+              />
+            </div>
+
+            {/* Time Range Dropdown */}
+            <div className="flex-1">
+              <label className="block text-sm font-medium mb-2">
+                <Clock className="inline h-4 w-4 mr-1" />
+                Daily Time Range
+              </label>
+              <select
+                value={`${formData.start_time}-${formData.end_time}`}
+                onChange={(e) => {
+                  const [start, end] = e.target.value.split('-');
+                  setFormData(prev => ({ ...prev, start_time: start, end_time: end }));
+                }}
+                className="w-full p-3 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 appearance-none"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e")`,
+                  backgroundPosition: 'right 0.75rem center',
+                  backgroundRepeat: 'no-repeat',
+                  backgroundSize: '1.5em 1.5em'
+                }}
+              >
+                <option value="09:00-19:00">Standard (9:00am - 7:00pm)</option>
+                <option value="04:00-12:00">Early Morning (4:00am - 12:00pm)</option>
+                <option value="15:00-22:00">Afternoon (3:00pm - 10:00pm)</option>
+                <option value="20:00-04:00">Late Night (8:00pm - 4:00am)</option>
+              </select>
+            </div>
+
+            {/* Max Participants */}
+            <div className="w-24">
+              <label className="block text-sm font-medium mb-2">
+                <ParticipantIcon className="inline h-4 w-4 mr-1" />
+                Max Katz
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="50"
+                value={formData.max_participants}
+                onChange={(e) => handleInputChange('max_participants', parseInt(e.target.value) || 7)}
+                className="w-full p-3 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
+                required
+              />
+            </div>
+          </div>
+
           {/* Action Buttons */}
           <div className="flex gap-3 pt-4">
             <Button
@@ -169,28 +236,6 @@ export function MeetingCreator({ onMeetingCreated, onCancel }: MeetingCreatorPro
               disabled={isSubmitting}
             >
               {isSubmitting ? 'Creating Herd...' : 'Create Herd'}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={isSubmitting}
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 240 238"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 mr-2"
-              >
-                <path
-                  fillRule="evenodd"
-                  clipRule="evenodd"
-                  d="M213.467 10V24.5332H198.933V39.0669H184.4V24.5332H169.867V10H155.333V68.1333H140.8V53.6001H126.267V39.0669H68.1333V53.6001H53.6001V68.1333H39.0667V82.6665H24.5333V24.5332H39.0667V10H24.5333V24.5332H10V82.6665H24.5333V140.8H39.0667V213.467H53.6001V228H82.6667V213.467H68.1333V140.8H82.6667V126.267H97.2V111.733H111.733V126.267H126.267V140.8H140.8V155.333H155.333V213.467H169.867V228H198.933V213.467H184.4V169.867H198.933V126.267H213.467V97.2002H228V10H213.467ZM184.4 68.1333H169.867V53.6001H184.4V68.1333ZM213.467 68.1333H198.933V53.6001H213.467V68.1333Z"
-                  fill="currentColor"
-                />
-              </svg>
-              Toys
             </Button>
           </div>
         </form>

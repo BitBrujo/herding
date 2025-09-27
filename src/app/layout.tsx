@@ -8,22 +8,20 @@ import "./globals.css";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 
 export const metadata: Metadata = {
-  title: "Herding Katz - Smart Group Scheduling",
-  description: "AI-powered meeting scheduling with intelligent conflict resolution and natural language input",
+    title: "Herding Katz",
+    description: "Simple app to help herd up",
 };
 
 export default function RootLayout({
-  children,
+    children,
 }: Readonly<{
-  children: React.ReactNode;
+    children: React.ReactNode;
 }>) {
-  return (
-    <html lang="en" className="dark">
-      <body className="antialiased">
-        <AuthProvider>
-          {children}
-        </AuthProvider>
-      </body>
-    </html>
-  );
+    return (
+        <html lang="en" className="dark">
+            <body className="antialiased">
+                <AuthProvider>{children}</AuthProvider>
+            </body>
+        </html>
+    );
 }
