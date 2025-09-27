@@ -136,25 +136,29 @@ export function MeetingCreator({ onMeetingCreated, onCancel }: MeetingCreatorPro
             />
           </div>
 
-          {/* Meeting Settings */}
+          {/* Timezone */}
           <div>
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                <MapPin className="inline h-4 w-4 mr-1" />
-                Timezone
-              </label>
-              <select
-                value={formData.timezone}
-                onChange={(e) => handleInputChange('timezone', e.target.value)}
-                className="w-full p-3 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
-              >
-                {COMMON_TIMEZONES.map(tz => (
-                  <option key={tz.name} value={tz.name}>
-                    {tz.abbreviation} - {tz.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <label className="block text-sm font-medium mb-2">
+              <MapPin className="inline h-4 w-4 mr-1" />
+              Timezone
+            </label>
+            <select
+              value={formData.timezone}
+              onChange={(e) => handleInputChange('timezone', e.target.value)}
+              className="w-full p-3 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 appearance-none"
+              style={{
+                backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e")`,
+                backgroundPosition: 'right 0.75rem center',
+                backgroundRepeat: 'no-repeat',
+                backgroundSize: '1.5em 1.5em'
+              }}
+            >
+              {COMMON_TIMEZONES.map(tz => (
+                <option key={tz.name} value={tz.name}>
+                  {tz.abbreviation} - {tz.label}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Action Buttons */}

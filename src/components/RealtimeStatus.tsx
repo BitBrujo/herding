@@ -14,27 +14,27 @@ export function RealtimeStatus({ state, showText = true, className = "" }: Realt
   const getStatusDisplay = () => {
     if (state.isConnected) {
       return {
-        icon: <Wifi className="h-3 w-3 text-green-600" />,
+        icon: <Wifi className="h-4 w-4 text-green-700" />,
         text: "Live",
-        textColor: "text-green-600"
+        textColor: "text-green-700"
       };
     } else if (state.isConnecting) {
       return {
-        icon: <div className="h-3 w-3 rounded-full bg-yellow-600 animate-pulse" />,
+        icon: <div className="h-4 w-4 rounded-full bg-orange-600 animate-pulse" />,
         text: "Connecting...",
-        textColor: "text-yellow-600"
+        textColor: "text-orange-600"
       };
     } else if (state.error) {
       return {
-        icon: <AlertTriangle className="h-3 w-3 text-red-600" />,
+        icon: <AlertTriangle className="h-4 w-4 text-red-700" />,
         text: "Error",
-        textColor: "text-red-600"
+        textColor: "text-red-700"
       };
     } else {
       return {
-        icon: <WifiOff className="h-3 w-3 text-red-600" />,
+        icon: <WifiOff className="h-4 w-4 text-red-700" />,
         text: "Offline",
-        textColor: "text-red-600"
+        textColor: "text-red-700"
       };
     }
   };
@@ -42,7 +42,7 @@ export function RealtimeStatus({ state, showText = true, className = "" }: Realt
   const status = getStatusDisplay();
 
   return (
-    <div className={`flex items-center gap-1 text-xs ${className}`}>
+    <div className={`flex items-center gap-2 text-sm ${className}`}>
       {status.icon}
       {showText && (
         <span className={status.textColor}>

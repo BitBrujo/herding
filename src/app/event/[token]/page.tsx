@@ -366,11 +366,6 @@ export default function EventPage({ params }: EventPageProps) {
   return (
     <AppShell>
       <div className="max-w-7xl mx-auto">
-        {/* Real-time status indicator */}
-        <div className="flex justify-end mb-2">
-          <RealtimeStatus state={realtimeState} />
-        </div>
-
         {/* Main availability grid */}
         <AvailabilityGrid
           event={event}
@@ -401,6 +396,7 @@ export default function EventPage({ params }: EventPageProps) {
             }
           }}
           showParticipantList={showParticipantList}
+          realtimeState={realtimeState}
         />
 
         {/* Action buttons below grid */}

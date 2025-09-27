@@ -3,8 +3,9 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Share2, Copy, X } from 'lucide-react';
+import { Share2, Copy, X, ChevronRight } from 'lucide-react';
 import { ParticipantIcon } from '@/components/icons/ParticipantIcon';
+import { RealtimeStatus } from '@/components/RealtimeStatus';
 
 interface TimeSlot {
   date: string;
@@ -43,6 +44,12 @@ interface AvailabilityGridProps {
   shareUrl?: string;
   onKatzClick?: () => void;
   showParticipantList?: boolean;
+  realtimeState?: {
+    isConnected: boolean;
+    isConnecting: boolean;
+    error: string | null;
+    lastActivity: Date | null;
+  };
 }
 
 export function AvailabilityGrid({
@@ -55,7 +62,8 @@ export function AvailabilityGrid({
   onCopyShareLink,
   shareUrl,
   onKatzClick,
-  showParticipantList = false
+  showParticipantList = false,
+  realtimeState
 }: AvailabilityGridProps) {
   const [dragState, setDragState] = useState<{
     isDragging: boolean;
@@ -68,8 +76,10 @@ export function AvailabilityGrid({
   });
 
   const [hoveredSlot, setHoveredSlot] = useState<string | null>(null);
+  const [statusButtonRaised, setStatusButtonRaised] = useState(false);
   const gridRef = useRef<HTMLDivElement>(null);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const statusButtonRef = useRef<HTMLButtonElement>(null);
 
   // Helper function to format time in 12-hour format
   const formatTime12Hour = (hour: number, minute: number) => {
@@ -237,6 +247,18 @@ export function AvailabilityGrid({
     return () => document.removeEventListener('mouseup', handleGlobalMouseUp);
   }, []);
 
+  // Handle clicking outside status button to lower it
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (statusButtonRaised && statusButtonRef.current && !statusButtonRef.current.contains(event.target as Node)) {
+        setStatusButtonRaised(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [statusButtonRaised]);
+
   // Get tooltip content for hovered slot
   const getTooltipContent = (date: string, time: string) => {
     const heat = getSlotHeatData(date, time);
@@ -316,12 +338,12 @@ export function AvailabilityGrid({
                   </Button>
                 </div>
               ) : (
-                <div className="bg-primary/10 border border-primary/20 rounded-lg px-4 py-2 w-full flex items-center justify-center h-10">
-                  <CardTitle className="text-lg font-bold text-center">
+                <div className="bg-blue-500 border border-blue-600 rounded-lg px-4 py-2 w-full flex items-center justify-center h-10">
+                  <CardTitle className="text-lg font-bold text-center text-blue-100">
                     {event.title}
                     {currentParticipant && (
                       <>
-                        <span className="text-lg text-muted-foreground"> for </span>
+                        <span className="text-lg text-blue-200"> for </span>
                         {currentParticipant.name}
                       </>
                     )}
@@ -330,12 +352,22 @@ export function AvailabilityGrid({
               )}
             </div>
 
-            {/* Share button and Katz count below title */}
+            {/* Share button, Live status, and Katz count below title */}
             <div className="flex justify-center gap-4">
               {onShareClick && (
                 <Button
                   variant="outline"
-                  onClick={onShareClick}
+                  onClick={() => {
+                    // Cat meow sound effect
+                    if ('speechSynthesis' in window) {
+                      const utterance = new SpeechSynthesisUtterance('meow');
+                      utterance.rate = 1.5;
+                      utterance.pitch = 1.8;
+                      utterance.volume = 0.8;
+                      window.speechSynthesis.speak(utterance);
+                    }
+                    onShareClick();
+                  }}
                   className={`flex items-center gap-2 flex-1 max-w-xs ${
                     showShareInfo
                       ? 'border-primary bg-primary/10'
@@ -346,6 +378,23 @@ export function AvailabilityGrid({
                   Call More Katz
                 </Button>
               )}
+
+              {/* Live status button */}
+              {realtimeState && (
+                <Button
+                  ref={statusButtonRef}
+                  variant="outline"
+                  onClick={() => {
+                    setStatusButtonRaised(!statusButtonRaised);
+                  }}
+                  className={`flex items-center gap-2 flex-1 max-w-xs border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 hover:border-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 relative transition-all duration-150 ${
+                    statusButtonRaised ? 'scale-[1.33] z-50' : 'scale-100'
+                  }`}
+                >
+                  <RealtimeStatus state={realtimeState} showText={true} />
+                </Button>
+              )}
+
               <Button
                 variant="outline"
                 onClick={onKatzClick}
@@ -383,17 +432,24 @@ export function AvailabilityGrid({
             ))}
 
           {/* Grid rows for each date */}
-          {dates.map(date => (
+          {dates.map((date, index) => (
               <React.Fragment key={date}>
                 {/* Date label */}
-                <div className="text-xs font-semibold py-1 px-2 text-center border-r border-border bg-muted/40 sticky left-0 z-10 min-w-[50px]">
+                <div className="text-xs font-semibold py-1 px-2 text-center border-r border-border bg-blue-500 sticky left-0 z-10 min-w-[50px] rounded-l-lg relative">
+                  {index === 0 && (
+                    <div className="absolute -top-8 left-1/2 transform -translate-x-1/2">
+                      <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center border-2 border-white">
+                        <ChevronRight className="h-4 w-4 text-white" />
+                      </div>
+                    </div>
+                  )}
                   <div className="leading-tight">
-                    <div className="font-bold">
+                    <div className="font-bold text-blue-100">
                       {new Date(date).toLocaleDateString('en-US', {
                         day: 'numeric'
                       })}
                     </div>
-                    <div className="text-[10px] text-muted-foreground">
+                    <div className="text-[10px] text-blue-100">
                       {new Date(date).toLocaleDateString('en-US', {
                         weekday: 'short'
                       })}
