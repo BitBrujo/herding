@@ -69,6 +69,14 @@ export function AvailabilityGrid({
 
   const [hoveredSlot, setHoveredSlot] = useState<string | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Helper function to format time in 12-hour format
+  const formatTime12Hour = (hour: number, minute: number) => {
+    const period = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+    return `${displayHour}:${minute.toString().padStart(2, '0')} ${period}`;
+  };
 
   // Generate time slots based on event parameters
   const generateTimeSlots = useCallback(() => {
@@ -88,10 +96,10 @@ export function AvailabilityGrid({
         const startMinutes = hour === startHour ? startMinute : 0;
         const endMinutes = hour === endHour ? endMinute : 60;
 
-        for (let minute = startMinutes; minute < endMinutes; minute += 60) {
+        for (let minute = startMinutes; minute < endMinutes; minute += 30) {
           slots.push({
             date: dateStr,
-            time: `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`,
+            time: formatTime12Hour(hour, minute),
             hour,
             minute
           });
@@ -183,11 +191,30 @@ export function AvailabilityGrid({
 
   const handleMouseEnter = (date: string, time: string) => {
     const slotKey = `${date}-${time}`;
-    setHoveredSlot(slotKey);
+
+    // Clear any existing timeout
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+
+    // Set tooltip to appear after 2 seconds (2000ms)
+    hoverTimeoutRef.current = setTimeout(() => {
+      setHoveredSlot(slotKey);
+    }, 2000);
 
     if (dragState.isDragging && dragState.dragMode && currentParticipant) {
       onAvailabilityChange?.(currentParticipant.id, { date, time, hour: 0, minute: 0 }, dragState.dragMode);
     }
+  };
+
+  const handleMouseLeave = () => {
+    // Clear timeout to prevent tooltip from appearing
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+    // Hide tooltip immediately
+    setHoveredSlot(null);
   };
 
   const handleMouseUp = () => {
@@ -333,9 +360,9 @@ export function AvailabilityGrid({
         <CardContent className="p-0">
           <div
             ref={gridRef}
-            className="grid gap-1 select-none p-3 bg-gradient-to-br from-background to-muted/20 max-h-[60vh] overflow-auto"
+            className="grid gap-0 select-none p-2 bg-gradient-to-br from-background to-muted/20 w-full overflow-x-auto overflow-y-auto max-h-[85vh]"
             style={{
-              gridTemplateColumns: `100px repeat(${timeLabels.length}, minmax(40px, 1fr))`,
+              gridTemplateColumns: `auto repeat(${timeLabels.length}, minmax(35px, 45px))`,
             }}
           >
             {/* Header row with times */}
@@ -353,11 +380,19 @@ export function AvailabilityGrid({
           {dates.map(date => (
               <React.Fragment key={date}>
                 {/* Date label */}
-                <div className="text-xs font-semibold py-2 pr-2 text-right border-r border-border bg-muted/40 sticky left-0 z-10">
-                  {new Date(date).toLocaleDateString('en-US', {
-                    weekday: 'short',
-                    day: 'numeric'
-                  })}
+                <div className="text-xs font-semibold py-1 px-2 text-center border-r border-border bg-muted/40 sticky left-0 z-10 min-w-[50px]">
+                  <div className="leading-tight">
+                    <div className="font-bold">
+                      {new Date(date).toLocaleDateString('en-US', {
+                        day: 'numeric'
+                      })}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground">
+                      {new Date(date).toLocaleDateString('en-US', {
+                        weekday: 'short'
+                      })}
+                    </div>
+                  </div>
                 </div>
 
                 {/* Time slots for this date */}
@@ -377,26 +412,41 @@ export function AvailabilityGrid({
                       `}
                       onMouseDown={() => handleMouseDown(date, time)}
                       onMouseEnter={() => handleMouseEnter(date, time)}
-                      onMouseLeave={() => setHoveredSlot(null)}
-                      title={`${tooltip.date} at ${tooltip.time}\n${tooltip.available.length} available, ${tooltip.maybe.length} maybe\nTotal: ${tooltip.total} participants`}
+                      onMouseLeave={handleMouseLeave}
                     >
                     {hoveredSlot === slotKey && tooltip.total > 0 && (
                       <div className="relative">
                         <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 bg-black text-white text-xs rounded p-2 z-10 min-w-max">
                           <div className="font-medium">{tooltip.date} at {tooltip.time}</div>
-                          {tooltip.available.length > 0 && (
-                            <div className="text-green-300">
-                              ✓ Available: {tooltip.available.join(', ')}
-                            </div>
-                          )}
-                          {tooltip.maybe.length > 0 && (
-                            <div className="text-yellow-300">
-                              ? Maybe: {tooltip.maybe.join(', ')}
-                            </div>
-                          )}
-                          <div className="text-gray-300">
-                            Total: {tooltip.total} participants
-                          </div>
+                          {(() => {
+                            const currentParticipantAvailability = currentParticipant ?
+                              participants.find(p => p.participantId === currentParticipant.id)?.availability[slotKey] : null;
+
+                            if (currentParticipantAvailability === 'available' || currentParticipantAvailability === 'maybe') {
+                              // After selection: show total participants
+                              return (
+                                <div className="text-gray-300">
+                                  {tooltip.total} participants
+                                </div>
+                              );
+                            } else {
+                              // Before selection: show available participants
+                              return (
+                                <>
+                                  {tooltip.available.length > 0 && (
+                                    <div className="text-green-300">
+                                      ✓ Available: {tooltip.available.join(', ')}
+                                    </div>
+                                  )}
+                                  {tooltip.maybe.length > 0 && (
+                                    <div className="text-yellow-300">
+                                      ? Maybe: {tooltip.maybe.join(', ')}
+                                    </div>
+                                  )}
+                                </>
+                              );
+                            }
+                          })()}
                         </div>
                       </div>
                     )}

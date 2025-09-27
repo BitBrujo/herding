@@ -103,7 +103,7 @@ export default function CreatePage() {
                   size="lg"
                 >
                   <Calendar className="h-4 w-4 mr-2" />
-                  Set Your Availability
+                  Continue &rarr;
                 </Button>
               </div>
             </CardContent>

@@ -12,21 +12,6 @@ export function Navigation() {
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2">
             <svg
-              width="32"
-              height="32"
-              viewBox="0 0 240 238"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-8 w-8 text-primary"
-            >
-              <path
-                fillRule="evenodd"
-                clipRule="evenodd"
-                d="M213.467 10V24.5332H198.933V39.0669H184.4V24.5332H169.867V10H155.333V68.1333H140.8V53.6001H126.267V39.0669H68.1333V53.6001H53.6001V68.1333H39.0667V82.6665H24.5333V24.5332H39.0667V10H24.5333V24.5332H10V82.6665H24.5333V140.8H39.0667V213.467H53.6001V228H82.6667V213.467H68.1333V140.8H82.6667V126.267H97.2V111.733H111.733V126.267H126.267V140.8H140.8V155.333H155.333V213.467H169.867V228H198.933V213.467H184.4V169.867H198.933V126.267H213.467V97.2002H228V10H213.467ZM184.4 68.1333H169.867V53.6001H184.4V68.1333ZM213.467 68.1333H198.933V53.6001H213.467V68.1333Z"
-                fill="currentColor"
-              />
-            </svg>
-            <svg
               width="120"
               height="55"
               viewBox="0 0 160 73"

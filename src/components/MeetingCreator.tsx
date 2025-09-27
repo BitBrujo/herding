@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
-import { Calendar, Clock, MapPin } from 'lucide-react';
+import { Calendar, Clock, MapPin, ArrowLeft, X, Gamepad2 } from 'lucide-react';
 import { ParticipantIcon } from '@/components/icons/ParticipantIcon';
 import { COMMON_TIMEZONES, detectUserTimezone } from '@/lib/timezone-utils';
 
@@ -68,8 +68,8 @@ export function MeetingCreator({ onMeetingCreated, onCancel }: MeetingCreatorPro
           // Set default date range for grid setup (next 7 days)
           start_date: new Date().toISOString().split('T')[0],
           end_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          start_time: '09:00',
-          end_time: '17:00'
+          start_time: '06:00',
+          end_time: '22:00'
         }),
       });
 
@@ -91,10 +91,27 @@ export function MeetingCreator({ onMeetingCreated, onCancel }: MeetingCreatorPro
   return (
     <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
-        <CardTitle className="flex items-center justify-center gap-3 text-3xl">
-          <ParticipantIcon className="h-8 w-8 text-primary" />
-          Create New Herd
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <div className="flex-1"></div>
+          <CardTitle className="flex items-center gap-3 text-3xl">
+            <ParticipantIcon className="h-8 w-8 text-primary" />
+            Create New Herd
+          </CardTitle>
+          <div className="flex-1 flex justify-end">
+            {onCancel && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={onCancel}
+                disabled={isSubmitting}
+                className="h-8 w-8 p-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -107,36 +124,20 @@ export function MeetingCreator({ onMeetingCreated, onCancel }: MeetingCreatorPro
           {/* Event Name */}
           <div>
             <label className="block text-sm font-medium mb-2">
-              Herd Name *
+              Herd Name
             </label>
             <input
               type="text"
               value={formData.title}
               onChange={(e) => handleInputChange('title', e.target.value)}
               className="w-full p-3 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
-              placeholder="Team Meeting"
+              placeholder="event"
               required
             />
           </div>
 
           {/* Meeting Settings */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                <Clock className="inline h-4 w-4 mr-1" />
-                Duration
-              </label>
-              <select
-                value={formData.duration_minutes}
-                onChange={(e) => handleInputChange('duration_minutes', parseInt(e.target.value))}
-                className="w-full p-3 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
-              >
-                <option value={30}>30 minutes</option>
-                <option value={60}>1 hour</option>
-                <option value={120}>2 hours</option>
-              </select>
-            </div>
-
+          <div>
             <div>
               <label className="block text-sm font-medium mb-2">
                 <MapPin className="inline h-4 w-4 mr-1" />
@@ -156,39 +157,6 @@ export function MeetingCreator({ onMeetingCreated, onCancel }: MeetingCreatorPro
             </div>
           </div>
 
-          {/* Optional Settings */}
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                Optional Password
-              </label>
-              <input
-                type="password"
-                value={formData.password}
-                onChange={(e) => handleInputChange('password', e.target.value)}
-                className="w-full p-3 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
-                placeholder="Protect your event with a password"
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Leave empty for public access
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                id="google-calendar"
-                checked={formData.enable_google_calendar}
-                onChange={(e) => handleInputChange('enable_google_calendar', e.target.checked)}
-                className="h-4 w-4 text-primary border-border rounded focus:ring-2 focus:ring-primary/20"
-              />
-              <label htmlFor="google-calendar" className="text-sm font-medium">
-                Enable Google Calendar integration
-              </label>
-            </div>
-          </div>
-
-
           {/* Action Buttons */}
           <div className="flex gap-3 pt-4">
             <Button
@@ -196,18 +164,30 @@ export function MeetingCreator({ onMeetingCreated, onCancel }: MeetingCreatorPro
               className="flex-1"
               disabled={isSubmitting}
             >
-              {isSubmitting ? 'Creating Meeting...' : 'Create Meeting'}
+              {isSubmitting ? 'Creating Herd...' : 'Create Herd'}
             </Button>
-            {onCancel && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onCancel}
-                disabled={isSubmitting}
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isSubmitting}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 240 238"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4 mr-2"
               >
-                Cancel
-              </Button>
-            )}
+                <path
+                  fillRule="evenodd"
+                  clipRule="evenodd"
+                  d="M213.467 10V24.5332H198.933V39.0669H184.4V24.5332H169.867V10H155.333V68.1333H140.8V53.6001H126.267V39.0669H68.1333V53.6001H53.6001V68.1333H39.0667V82.6665H24.5333V24.5332H39.0667V10H24.5333V24.5332H10V82.6665H24.5333V140.8H39.0667V213.467H53.6001V228H82.6667V213.467H68.1333V140.8H82.6667V126.267H97.2V111.733H111.733V126.267H126.267V140.8H140.8V155.333H155.333V213.467H169.867V228H198.933V213.467H184.4V169.867H198.933V126.267H213.467V97.2002H228V10H213.467ZM184.4 68.1333H169.867V53.6001H184.4V68.1333ZM213.467 68.1333H198.933V53.6001H213.467V68.1333Z"
+                  fill="currentColor"
+                />
+              </svg>
+              Toys
+            </Button>
           </div>
         </form>
       </CardContent>
