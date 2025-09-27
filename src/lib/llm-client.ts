@@ -229,8 +229,8 @@ export class LocalLLMClient {
 // Default configuration
 export const getDefaultLLMConfig = (): LLMConfig => {
   return {
-    endpoint: process.env.LLM_ENDPOINT || 'http://localhost:11434',
-    model: process.env.LLM_MODEL || 'llama3.2',
+    endpoint: process.env.LLM_ENDPOINT || 'http://100.87.169.2:11434',
+    model: process.env.LLM_MODEL || 'qwen2.5-coder:7b',
     temperature: parseFloat(process.env.LLM_TEMPERATURE || '0.7'),
     maxTokens: parseInt(process.env.LLM_MAX_TOKENS || '2000'),
     apiKey: process.env.LLM_API_KEY

@@ -6,6 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Calendar, Clock, MapPin, ArrowLeft, X, Gamepad2, ChevronDown, ChevronRight } from 'lucide-react';
 import { ParticipantIcon } from '@/components/icons/ParticipantIcon';
 import { COMMON_TIMEZONES, detectUserTimezone } from '@/lib/timezone-utils';
+import { LLMPromptBox } from '@/components/LLMPromptBox';
 
 interface MeetingData {
   title: string;
@@ -46,6 +47,13 @@ export function MeetingCreator({ onMeetingCreated, onCancel }: MeetingCreatorPro
     setFormData(prev => ({
       ...prev,
       [field]: value
+    }));
+  };
+
+  const handleParameterUpdate = (updates: Record<string, string | number | boolean>) => {
+    setFormData(prev => ({
+      ...prev,
+      ...updates
     }));
   };
 
@@ -267,6 +275,9 @@ export function MeetingCreator({ onMeetingCreated, onCancel }: MeetingCreatorPro
               </div>
             </div>
           )}
+
+          {/* LLM Prompt Box */}
+          <LLMPromptBox onParameterUpdate={handleParameterUpdate} />
         </form>
       </CardContent>
     </Card>
