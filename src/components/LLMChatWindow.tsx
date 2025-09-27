@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
+import { Card, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Send, User, X } from 'lucide-react';
+import { Send, User, X, RotateCcw } from 'lucide-react';
 import { RobotCatIcon } from '@/components/icons/RobotCatIcon';
 
 interface Message {
@@ -14,18 +14,38 @@ interface Message {
   participantName?: string;
 }
 
+interface AvailabilityUpdate {
+  date: string;
+  time: string;
+  status: 'available' | 'unavailable' | 'maybe';
+}
+
 interface LLMChatWindowProps {
   participantName: string;
+  participantId?: string;
+  eventId?: string;
+  eventContext?: {
+    title: string;
+    startDate: string;
+    endDate: string;
+    startTime: string;
+    endTime: string;
+  };
   isOpen: boolean;
   onClose: () => void;
-  onAvailabilityUpdate?: (message: string) => void;
+  onAvailabilityUpdate?: (updates: AvailabilityUpdate[]) => void;
+  isInline?: boolean;
 }
 
 export function LLMChatWindow({
   participantName,
+  participantId,
+  eventId,
+  eventContext,
   isOpen,
   onClose,
-  onAvailabilityUpdate
+  onAvailabilityUpdate,
+  isInline = false
 }: LLMChatWindowProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -76,7 +96,17 @@ export function LLMChatWindow({
         },
         body: JSON.stringify({
           message: userMessage,
-          participantName: participantName
+          participantName: participantName,
+          eventId: eventId,
+          participantId: participantId,
+          context: eventContext ? {
+            participantName: participantName,
+            eventTitle: eventContext.title,
+            startDate: eventContext.startDate,
+            endDate: eventContext.endDate,
+            startTime: eventContext.startTime,
+            endTime: eventContext.endTime
+          } : {}
         }),
       });
 
@@ -91,10 +121,10 @@ export function LLMChatWindow({
       if (data.success) {
         addMessage(data.response || 'I understand your preferences. I can help you update your availability on the grid!', 'llm');
 
-        // Notify parent component about availability update
-        if (data.availabilityUpdates) {
+        // Notify parent component about availability update with actual parsed updates
+        if (data.availabilityUpdates && Array.isArray(data.availabilityUpdates) && data.availabilityUpdates.length > 0) {
           console.log('LLMChatWindow notifying parent of availability updates:', data.availabilityUpdates);
-          onAvailabilityUpdate?.(userMessage);
+          onAvailabilityUpdate?.(data.availabilityUpdates);
         }
       } else {
         addMessage(data.error || 'Sorry, I encountered an error processing your request.', 'llm');
@@ -129,7 +159,154 @@ export function LLMChatWindow({
     }
   };
 
+  const handleRestartChat = () => {
+    setMessages([
+      {
+        id: '1',
+        type: 'llm',
+        content: `Hi ${participantName}, I can help you herd your Katz. What do you need?`,
+        timestamp: new Date()
+      }
+    ]);
+    setInputValue('');
+  };
+
   if (!isOpen) return null;
+
+  if (isInline) {
+    return (
+      <Card className="w-full h-full flex flex-col shadow-lg border-gray-300 bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50 rounded-none">
+        <div className="flex items-center justify-center w-full bg-gradient-to-r from-gray-200 to-gray-300 border border-gray-300 px-4 py-3 mx-2 mt-2 mb-2 relative rounded-lg">
+          <CardTitle className="text-gray-700 font-semibold text-center">
+            RoboKatz
+          </CardTitle>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleRestartChat}
+            className="absolute right-2 hover:bg-gray-300/50 text-gray-600 hover:text-gray-800"
+            title="Restart chat"
+          >
+            <RotateCcw className="h-3 w-3" />
+          </Button>
+        </div>
+
+        <CardContent className="flex-1 flex flex-col p-0 bg-gray-50/80 overflow-hidden">
+          {/* Messages */}
+          <div
+            className="flex-1 overflow-y-auto p-3 space-y-4 chat-messages-scroll"
+            style={{
+              scrollbarWidth: 'thin',
+              scrollbarColor: '#4ade80 #d1d5db'
+            }}
+          >
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className={`flex gap-2 ${
+                  message.type === 'user' ? 'justify-end' : 'justify-start'
+                }`}
+              >
+                <div
+                  className={`flex gap-2 max-w-[80%] ${
+                    message.type === 'user' ? 'flex-row-reverse' : 'flex-row'
+                  }`}
+                >
+                  <div className="flex-shrink-0">
+                    {message.type === 'user' ? (
+                      <div className="w-8 h-8 bg-gradient-to-br from-gray-400 to-gray-500 rounded-full flex items-center justify-center shadow-lg">
+                        <User className="h-4 w-4 text-gray-100" />
+                      </div>
+                    ) : (
+                      <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center shadow-lg">
+                        <RobotCatIcon className="h-4 w-4 text-white" />
+                      </div>
+                    )}
+                  </div>
+                  <div
+                    className={`rounded-xl p-3 shadow-sm ${
+                      message.type === 'user'
+                        ? 'bg-gradient-to-br from-gray-200 to-gray-300 text-gray-800 border border-gray-300'
+                        : 'bg-gradient-to-br from-gray-100 to-gray-200 text-gray-800 border border-gray-200'
+                    }`}
+                  >
+                    <p className="text-sm leading-relaxed">{message.content}</p>
+                    <div className={`text-xs mt-2 ${
+                      message.type === 'user' ? 'text-gray-600' : 'text-gray-500'
+                    }`}>
+                      {message.timestamp.toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {isTyping && (
+              <div className="flex gap-2 justify-start">
+                <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center shadow-lg">
+                  <RobotCatIcon className="h-4 w-4 text-white" />
+                </div>
+                <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl p-3 shadow-sm border border-gray-200">
+                  <div className="flex gap-1.5 items-center">
+                    <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                    <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Quick Prompts */}
+          <div className="flex-shrink-0 px-3 py-3">
+            <div className="text-sm text-gray-600 mb-3 font-medium">Suggestions:</div>
+            <div className="flex flex-wrap gap-2 mb-4">
+              {quickPrompts.map((prompt, index) => (
+                <Button
+                  key={index}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleQuickPrompt(prompt)}
+                  disabled={isTyping}
+                  className="text-xs bg-transparent hover:bg-green-500 border-gray-400 text-gray-700 hover:text-white transition-all duration-200"
+                >
+                  {prompt}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          {/* Input Area */}
+          <div className="flex-shrink-0 px-3 py-3">
+            <div className="flex gap-2 items-end">
+              <input
+                type="text"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Tell me about your availability..."
+                className="flex-1 p-3 border border-gray-400 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-green-400 transition-all duration-200 text-gray-800 placeholder:text-gray-500 text-sm"
+                disabled={isTyping}
+              />
+              <Button
+                onClick={handleSendMessage}
+                disabled={!inputValue.trim() || isTyping}
+                size="sm"
+                className="h-12 px-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl shadow-lg transition-all duration-200"
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
@@ -138,14 +315,26 @@ export function LLMChatWindow({
           <CardTitle className="text-green-100 font-semibold text-center">
             RoboKatz
           </CardTitle>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onClose}
-            className="absolute right-2 hover:bg-gray-600/50"
-          >
-            <X className="h-4 w-4 text-gray-300" />
-          </Button>
+          <div className="absolute right-2 flex gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleRestartChat}
+              className="hover:bg-gray-600/50 text-gray-300 hover:text-green-200"
+              title="Restart chat"
+            >
+              <RotateCcw className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClose}
+              className="hover:bg-gray-600/50 text-gray-300 hover:text-green-200"
+              title="Close chat"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
 
         <CardContent className="flex-1 flex flex-col p-0 bg-gray-800/80 overflow-hidden">

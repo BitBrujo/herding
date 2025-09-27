@@ -3,9 +3,10 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Share2, Copy, X, ChevronRight } from 'lucide-react';
+import { Share2, Copy, X, ChevronRight, MessageSquare } from 'lucide-react';
 import { ParticipantIcon } from '@/components/icons/ParticipantIcon';
 import { RealtimeStatus } from '@/components/RealtimeStatus';
+import { LLMChatWindow } from '@/components/LLMChatWindow';
 
 interface TimeSlot {
   date: string;
@@ -50,6 +51,9 @@ interface AvailabilityGridProps {
     error: string | null;
     lastActivity: Date | null;
   };
+  onLLMAvailabilityUpdate?: (updates: { date: string; time: string; status: 'available' | 'unavailable' | 'maybe' }[]) => void;
+  showChatWindow?: boolean;
+  onToggleChat?: () => void;
 }
 
 export function AvailabilityGrid({
@@ -63,7 +67,10 @@ export function AvailabilityGrid({
   shareUrl,
   onKatzClick,
   showParticipantList = false,
-  realtimeState
+  realtimeState,
+  onLLMAvailabilityUpdate,
+  showChatWindow = false,
+  onToggleChat
 }: AvailabilityGridProps) {
   const [dragState, setDragState] = useState<{
     isDragging: boolean;
@@ -542,7 +549,46 @@ export function AvailabilityGrid({
 
 
         </CardContent>
+
+        {/* Chat button at bottom of grid */}
+        {currentParticipant && onToggleChat && (
+          <div className="p-4 border-t border-border bg-muted/30">
+            <Button
+              variant="outline"
+              onClick={onToggleChat}
+              className={`w-full flex items-center justify-center gap-2 ${
+                showChatWindow
+                  ? 'border-primary bg-primary/10'
+                  : 'border-gray-300 dark:border-gray-600 hover:border-gray-400'
+              }`}
+            >
+              <MessageSquare className="h-4 w-4" />
+              {showChatWindow ? 'Hide Chat Assistant' : 'Show Chat Assistant'}
+            </Button>
+          </div>
+        )}
+
       </Card>
+
+      {/* Overlay Chat Window */}
+      {currentParticipant && (
+        <LLMChatWindow
+          participantName={currentParticipant.name}
+          participantId={currentParticipant.id}
+          eventId={event.id}
+          eventContext={{
+            title: event.title,
+            startDate: event.start_date,
+            endDate: event.end_date,
+            startTime: event.start_time,
+            endTime: event.end_time
+          }}
+          isOpen={showChatWindow}
+          onClose={() => onToggleChat?.()}
+          onAvailabilityUpdate={onLLMAvailabilityUpdate || (() => {})}
+          isInline={false}
+        />
+      )}
     </div>
   );
 }

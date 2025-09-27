@@ -4,8 +4,6 @@ import React, { useState, useEffect, use } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
 import { AvailabilityGrid } from '@/components/AvailabilityGrid';
 import { ParticipantNameEntry } from '@/components/ParticipantNameEntry';
-import { LLMChatWindow } from '@/components/LLMChatWindow';
-import { RealtimeStatus } from '@/components/RealtimeStatus';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import {
@@ -286,10 +284,30 @@ export default function EventPage({ params }: EventPageProps) {
     }
   };
 
-  const handleLLMAvailabilityUpdate = (message: string) => {
-    // In real implementation, this would process the natural language
-    // and update availability accordingly
-    console.log('Processing LLM message:', message);
+  const handleLLMAvailabilityUpdate = async (availabilityUpdates: { date: string; time: string; status: 'available' | 'unavailable' | 'maybe' }[]) => {
+    if (!currentParticipant || !event || !Array.isArray(availabilityUpdates)) return;
+
+    try {
+      // Process the availability updates directly from the chat window
+      console.log('🎯 EVENT PAGE: Received LLM availability updates:', availabilityUpdates);
+      console.log('🎯 EVENT PAGE: Current participant:', currentParticipant.name, currentParticipant.id);
+
+      for (const update of availabilityUpdates) {
+        if (update.date && update.time && update.status) {
+          console.log(`🎯 EVENT PAGE: Processing update - ${update.date} at ${update.time}: ${update.status}`);
+          await handleAvailabilityChange(
+            currentParticipant.id,
+            { date: update.date, time: update.time },
+            update.status
+          );
+          console.log(`✅ EVENT PAGE: Successfully processed update for ${update.date} at ${update.time}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error processing LLM availability update:', error);
+      setError('Failed to process your availability preferences. Please try updating manually.');
+      setTimeout(() => setError(null), 3000);
+    }
   };
 
   const copyShareLink = async () => {
@@ -398,35 +416,20 @@ export default function EventPage({ params }: EventPageProps) {
           }}
           showParticipantList={showParticipantList}
           realtimeState={realtimeState}
+          onLLMAvailabilityUpdate={handleLLMAvailabilityUpdate}
+          showChatWindow={showChatWindow}
+          onToggleChat={() => setShowChatWindow(!showChatWindow)}
         />
 
-        {/* Action buttons below grid */}
-        <div className="flex justify-center mt-6 w-full max-w-lg mx-auto">
-          <Button
-            variant="outline"
-            onClick={() => setShowChatWindow(true)}
-            className="flex items-center gap-2 flex-1"
-          >
-            <MessageSquare className="h-4 w-4" />
-            Chat Assistant
-          </Button>
-
-          {/* Future organizer controls */}
-          {isOrganizer && (
-            <Button className="flex items-center gap-2 flex-1 ml-4">
+        {/* Future organizer controls */}
+        {isOrganizer && (
+          <div className="flex justify-center mt-6 w-full max-w-lg mx-auto">
+            <Button className="flex items-center gap-2 flex-1">
               <CheckCircle className="h-4 w-4" />
               Finalize Meeting
             </Button>
-          )}
-        </div>
-
-        {/* LLM Chat Window */}
-        <LLMChatWindow
-          participantName={currentParticipant.name}
-          isOpen={showChatWindow}
-          onClose={() => setShowChatWindow(false)}
-          onAvailabilityUpdate={handleLLMAvailabilityUpdate}
-        />
+          </div>
+        )}
       </div>
     </AppShell>
   );
