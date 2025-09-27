@@ -3,7 +3,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Bot, User, X, Send, Loader2 } from 'lucide-react';
+import { User, X, Send, Loader2 } from 'lucide-react';
+import { RobotCatIcon } from '@/components/icons/RobotCatIcon';
 
 interface Message {
   id: string;
@@ -124,8 +125,8 @@ export function AIRobotChat({ isOpen, onClose, onParameterUpdate }: AIRobotChatP
       <Card className="w-full max-w-2xl h-[600px] flex flex-col">
         <CardHeader className="flex flex-row items-center justify-between border-b pb-4">
           <CardTitle className="flex items-center gap-2">
-            <Bot className="h-5 w-5 text-primary" />
-            AI Robot Help
+            <RobotCatIcon className="h-5 w-5 text-primary" />
+AI Katz Help
           </CardTitle>
           <Button variant="ghost" size="sm" onClick={onClose}>
             <X className="h-4 w-4" />
@@ -154,7 +155,7 @@ export function AIRobotChat({ isOpen, onClose, onParameterUpdate }: AIRobotChatP
                       </div>
                     ) : (
                       <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                        <Bot className="h-4 w-4 text-white" />
+                        <RobotCatIcon className="h-4 w-4 text-white" />
                       </div>
                     )}
                   </div>
@@ -196,7 +197,7 @@ export function AIRobotChat({ isOpen, onClose, onParameterUpdate }: AIRobotChatP
             {isLoading && (
               <div className="flex gap-3 justify-start">
                 <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                  <Bot className="h-4 w-4 text-white" />
+                  <RobotCatIcon className="h-4 w-4 text-white" />
                 </div>
                 <div className="bg-muted rounded-lg p-3">
                   <div className="flex gap-1">

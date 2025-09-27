@@ -188,3 +188,28 @@
     letter-spacing: var(--tracking-normal);
   }
 }
+
+/* Custom scrollbar styles for LLM Chat */
+.chat-messages-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #f9a8d4 #fce7f3;
+}
+
+.chat-messages-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chat-messages-scroll::-webkit-scrollbar-track {
+  background: #fce7f3;
+  border-radius: 4px;
+}
+
+.chat-messages-scroll::-webkit-scrollbar-thumb {
+  background: #f9a8d4;
+  border-radius: 4px;
+  border: 1px solid #fce7f3;
+}
+
+.chat-messages-scroll::-webkit-scrollbar-thumb:hover {
+  background: #f472b6;
+}

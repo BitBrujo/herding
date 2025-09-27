@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { Bot } from 'lucide-react';
+import { RobotCatIcon } from '@/components/icons/RobotCatIcon';
 import { AIRobotChat } from './AIRobotChat';
 
 interface AIRobotButtonProps {
@@ -21,8 +21,8 @@ export function AIRobotButton({ onParameterUpdate }: AIRobotButtonProps) {
           onClick={() => setIsOpen(true)}
           className="flex items-center gap-2"
         >
-          <Bot className="h-4 w-4" />
-          AI Robot Help
+          <RobotCatIcon className="h-4 w-4" />
+          AI Katz Help
         </Button>
       </div>
 
