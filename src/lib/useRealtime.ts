@@ -48,14 +48,22 @@ export function useRealtime(
   const maxReconnectAttempts = 5;
   const reconnectDelay = useRef(1000);
 
+  // Use refs to avoid infinite loops
+  const onDataChangeRef = useRef(onDataChange);
+  const configRef = useRef(config);
+
+  // Update refs when values change
+  onDataChangeRef.current = onDataChange;
+  configRef.current = config;
+
   const updateState = useCallback((updates: Partial<RealtimeState>) => {
     setState(prev => ({ ...prev, ...updates }));
   }, []);
 
   const handleDataChange = useCallback((payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
     updateState({ lastActivity: new Date(), error: null });
-    onDataChange(payload);
-  }, [onDataChange, updateState]);
+    onDataChangeRef.current(payload);
+  }, [updateState]);
 
   const handleConnect = useCallback(() => {
     updateState({
@@ -66,16 +74,16 @@ export function useRealtime(
     });
     reconnectAttempts.current = 0;
     reconnectDelay.current = 1000;
-    config.onConnect?.();
-  }, [config, updateState]);
+    configRef.current.onConnect?.();
+  }, [updateState]);
 
   const handleDisconnect = useCallback(() => {
     updateState({
       isConnected: false,
       isConnecting: false
     });
-    config.onDisconnect?.();
-  }, [config, updateState]);
+    configRef.current.onDisconnect?.();
+  }, [updateState]);
 
   const handleError = useCallback((error: Error | { message?: string }) => {
     const errorMessage = error?.message || 'Real-time connection error';
@@ -85,9 +93,9 @@ export function useRealtime(
       isConnecting: false
     });
     const errorObj = error instanceof Error ? error : new Error(errorMessage);
-    config.onError?.(errorObj);
+    configRef.current.onError?.(errorObj);
     console.error('Real-time subscription error:', error);
-  }, [config, updateState]);
+  }, [updateState]);
 
   const unsubscribe = useCallback(() => {
     if (reconnectTimeoutRef.current) {
@@ -108,13 +116,22 @@ export function useRealtime(
   }, [updateState]);
 
   const subscribe = useCallback(() => {
-    // Clean up existing subscription
-    unsubscribe();
+    // Clean up existing subscription first
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
 
     updateState({ isConnecting: true, error: null });
 
     try {
-      const channel = supabase.channel(config.channelName, {
+      const currentConfig = configRef.current;
+      const channel = supabase.channel(currentConfig.channelName, {
         config: {
           broadcast: { self: true },
           presence: { key: 'user_id' }
@@ -122,7 +139,7 @@ export function useRealtime(
       });
 
       // Add postgres change listeners for each table
-      config.tables.forEach(({ table, filter, event = '*' }) => {
+      currentConfig.tables.forEach(({ table, filter, event = '*' }) => {
         channel.on('postgres_changes', {
           event,
           schema: 'public',
@@ -164,7 +181,7 @@ export function useRealtime(
     } catch (error) {
       handleError(error);
     }
-  }, [config, handleDataChange, handleConnect, handleDisconnect, handleError, unsubscribe, updateState]);
+  }, [handleDataChange, handleConnect, handleDisconnect, handleError, updateState]);
 
   const reconnect = useCallback(() => {
     if (reconnectAttempts.current >= maxReconnectAttempts) {
@@ -193,18 +210,22 @@ export function useRealtime(
     }
   }, [state.isConnected, state.isConnecting, state.error, reconnect]);
 
-  // Initial subscription
+  // Initial subscription - only when channel name changes
   useEffect(() => {
-    subscribe();
-    return () => unsubscribe();
-  }, [subscribe, unsubscribe, ...deps]);
-
-  // Cleanup on unmount
-  useEffect(() => {
+    if (config.channelName) {
+      subscribe();
+    }
     return () => {
-      unsubscribe();
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
-  }, [unsubscribe]);
+  }, [config.channelName, subscribe]); // Subscribe when channel name changes
 
   return {
     state,

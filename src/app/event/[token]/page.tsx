@@ -5,19 +5,17 @@ import { AppShell } from '@/components/layout/AppShell';
 import { AvailabilityGrid } from '@/components/AvailabilityGrid';
 import { ParticipantNameEntry } from '@/components/ParticipantNameEntry';
 import { LLMChatWindow } from '@/components/LLMChatWindow';
+import { RealtimeStatus } from '@/components/RealtimeStatus';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import {
   Calendar,
-  Users,
-  Clock,
   MessageSquare,
-  Share2,
-  CheckCircle,
-  Copy,
-  X
+  CheckCircle
 } from 'lucide-react';
 import { Event, Participant } from '@/lib/types';
+import { useRealtime } from '@/lib/useRealtime';
+import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
 interface EventPageProps {
   params: Promise<{
@@ -33,6 +31,29 @@ interface ParticipantAvailability {
   };
 }
 
+// Helper function to convert 24-hour time to 12-hour format
+const formatTimeTo12Hour = (time24: string): string => {
+  const [hour, minute] = time24.split(':').map(Number);
+  const period = hour >= 12 ? 'PM' : 'AM';
+  const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+  return `${displayHour}:${minute.toString().padStart(2, '0')} ${period}`;
+};
+
+// Helper function to convert 12-hour time to 24-hour format
+const formatTimeTo24Hour = (time12: string): string => {
+  const [time, period] = time12.split(' ');
+  const [hour, minute] = time.split(':').map(Number);
+
+  let hour24 = hour;
+  if (period === 'AM' && hour === 12) {
+    hour24 = 0;
+  } else if (period === 'PM' && hour !== 12) {
+    hour24 = hour + 12;
+  }
+
+  return `${hour24.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}:00`;
+};
+
 export default function EventPage({ params }: EventPageProps) {
   const { token } = use(params);
   const [event, setEvent] = useState<Event | null>(null);
@@ -46,6 +67,49 @@ export default function EventPage({ params }: EventPageProps) {
   const [showShareInfo, setShowShareInfo] = useState(false);
   const [showParticipantList, setShowParticipantList] = useState(false);
 
+  // Real-time subscription for availability changes
+  const handleRealtimeChange = (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
+    if (payload.table === 'availability' && event) {
+      const availability = payload.new as { participant_id: string; date: string; start_time: string; status: string };
+
+      // Convert database format to grid format
+      const time12Hour = formatTimeTo12Hour(availability.start_time);
+      const slotKey = `${availability.date}-${time12Hour}`;
+
+      // Update local state with real-time change
+      setParticipantAvailability(prev =>
+        prev.map(p =>
+          p.participantId === availability.participant_id
+            ? {
+                ...p,
+                availability: {
+                  ...p.availability,
+                  [slotKey]: availability.status
+                }
+              }
+            : p
+        )
+      );
+    }
+  };
+
+  const { state: realtimeState } = useRealtime(
+    {
+      channelName: `event-${event?.id || 'loading'}`,
+      tables: [
+        {
+          table: 'availability',
+          filter: event ? `event_id=eq.${event.id}` : '',
+          event: '*'
+        }
+      ],
+      onConnect: () => console.log('Real-time connected'),
+      onDisconnect: () => console.log('Real-time disconnected'),
+      onError: (error) => console.error('Real-time error:', error)
+    },
+    handleRealtimeChange,
+    [event?.id] // Re-subscribe when event changes
+  );
 
   useEffect(() => {
     loadEventData();
@@ -74,11 +138,33 @@ export default function EventPage({ params }: EventPageProps) {
       if (participantsResponse.ok) {
         const { participants: eventParticipants } = await participantsResponse.json();
 
+        // Load availability data for this event
+        const availabilityResponse = await fetch(`/api/availability?event_id=${foundEvent.id}`);
+        let availabilityByParticipant: Record<string, Record<string, string>> = {};
+
+        if (availabilityResponse.ok) {
+          const { availability: availabilityData } = await availabilityResponse.json();
+
+          // Transform database availability into grid format
+          availabilityByParticipant = availabilityData.reduce((acc: Record<string, Record<string, string>>, avail: { participant_id: string; date: string; start_time: string; status: string }) => {
+            if (!acc[avail.participant_id]) {
+              acc[avail.participant_id] = {};
+            }
+
+            // Convert database time format to grid format
+            const time12Hour = formatTimeTo12Hour(avail.start_time);
+            const slotKey = `${avail.date}-${time12Hour}`;
+            acc[avail.participant_id][slotKey] = avail.status;
+
+            return acc;
+          }, {});
+        }
+
         // Transform participants into availability format
         const availabilityData = eventParticipants.map((p: Participant) => ({
           participantId: p.id,
           participantName: p.name,
-          availability: {} // This would be loaded from availability table in real implementation
+          availability: availabilityByParticipant[p.id] || {}
         }));
 
         setParticipantAvailability(availabilityData);
@@ -125,9 +211,10 @@ export default function EventPage({ params }: EventPageProps) {
     }
   };
 
-  const handleAvailabilityChange = (participantId: string, timeSlot: { date: string; time: string }, status: 'available' | 'unavailable' | 'maybe') => {
+  const handleAvailabilityChange = async (participantId: string, timeSlot: { date: string; time: string }, status: 'available' | 'unavailable' | 'maybe') => {
     const slotKey = `${timeSlot.date}-${timeSlot.time}`;
 
+    // Optimistic update - update UI immediately
     setParticipantAvailability(prev =>
       prev.map(p =>
         p.participantId === participantId
@@ -142,7 +229,61 @@ export default function EventPage({ params }: EventPageProps) {
       )
     );
 
-    // In real implementation, this would also save to the database
+    // Save to database
+    try {
+      if (!event) return;
+
+      const startTime24 = formatTimeTo24Hour(timeSlot.time);
+
+      // Calculate end time (30 minutes later for now)
+      const startDate = new Date(`2000-01-01T${startTime24}`);
+      const endDate = new Date(startDate.getTime() + 30 * 60 * 1000);
+      const endTime24 = endDate.toTimeString().slice(0, 8);
+
+      const response = await fetch('/api/availability', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          participant_id: participantId,
+          event_id: event.id,
+          date: timeSlot.date,
+          start_time: startTime24,
+          end_time: endTime24,
+          status: status,
+          preference_score: status === 'available' ? 1 : status === 'maybe' ? 0.5 : 0
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save availability');
+      }
+
+    } catch (error) {
+      console.error('Error saving availability:', error);
+
+      // Rollback optimistic update on error
+      setParticipantAvailability(prev =>
+        prev.map(p =>
+          p.participantId === participantId
+            ? {
+                ...p,
+                availability: {
+                  ...p.availability,
+                  [slotKey]: p.availability[slotKey] === status
+                    ? (status === 'available' ? 'unavailable' : 'available')
+                    : p.availability[slotKey]
+                }
+              }
+            : p
+        )
+      );
+
+      setError('Failed to save availability change. Please try again.');
+      setTimeout(() => setError(null), 3000);
+    }
   };
 
   const handleLLMAvailabilityUpdate = (message: string) => {
@@ -162,15 +303,6 @@ export default function EventPage({ params }: EventPageProps) {
     }
   };
 
-  const copyEventCode = async () => {
-    try {
-      await navigator.clipboard.writeText(token);
-      setShowShareInfo(true);
-      setTimeout(() => setShowShareInfo(false), 3000);
-    } catch (err) {
-      console.error('Failed to copy to clipboard:', err);
-    }
-  };
 
   if (loading) {
     return (
@@ -234,6 +366,10 @@ export default function EventPage({ params }: EventPageProps) {
   return (
     <AppShell>
       <div className="max-w-7xl mx-auto">
+        {/* Real-time status indicator */}
+        <div className="flex justify-end mb-2">
+          <RealtimeStatus state={realtimeState} />
+        </div>
 
         {/* Main availability grid */}
         <AvailabilityGrid

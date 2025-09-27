@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { User, Clock, Users, Calendar, Share2, Copy, X } from 'lucide-react';
+import { Share2, Copy, X } from 'lucide-react';
 import { ParticipantIcon } from '@/components/icons/ParticipantIcon';
 
 interface TimeSlot {
@@ -148,24 +148,30 @@ export function AvailabilityGrid({
 
     if (currentParticipant && currentAvailability) {
       if (currentAvailability === 'available') {
-        if (heat.percentage > 0.75) return 'bg-pink-600 border-pink-700';
-        if (heat.percentage > 0.5) return 'bg-pink-500 border-pink-600';
-        if (heat.percentage > 0.25) return 'bg-pink-400 border-pink-500';
-        return 'bg-pink-300 border-pink-400';
-      } else if (currentAvailability === 'maybe') {
+        // Pink shades when current participant is available - darker = more participants available
+        if (heat.percentage > 0.8) return 'bg-pink-600 border-pink-700 text-white';
+        if (heat.percentage > 0.6) return 'bg-pink-500 border-pink-600 text-white';
+        if (heat.percentage > 0.4) return 'bg-pink-400 border-pink-500';
+        if (heat.percentage > 0.2) return 'bg-pink-300 border-pink-400';
         return 'bg-pink-200 border-pink-300';
+      } else if (currentAvailability === 'maybe') {
+        // Light pink for maybe
+        return 'bg-pink-100 border-pink-200';
       } else {
+        // Gray for unavailable
         return 'bg-gray-100 border-gray-300';
       }
     }
 
-    // Heat map colors for viewing mode - pink theme
+    // Heat map colors for viewing mode - pink gradient (light to dark)
     if (heat.total === 0) return 'bg-gray-50 border-gray-200';
 
-    if (heat.percentage > 0.8) return 'bg-pink-600 border-pink-700';
-    if (heat.percentage > 0.6) return 'bg-pink-500 border-pink-600';
+    // High availability = Darker pink (better choice)
+    if (heat.percentage > 0.8) return 'bg-pink-600 border-pink-700 text-white';
+    if (heat.percentage > 0.6) return 'bg-pink-500 border-pink-600 text-white';
     if (heat.percentage > 0.4) return 'bg-pink-400 border-pink-500';
     if (heat.percentage > 0.2) return 'bg-pink-300 border-pink-400';
+    // Low availability = Light pink (poor choice)
     return 'bg-pink-100 border-pink-200';
   };
 
@@ -358,6 +364,24 @@ export function AvailabilityGrid({
         </CardHeader>
 
         <CardContent className="p-0">
+          {/* Heatmap legend */}
+          <div className="px-4 py-2 bg-gray-50 border-b">
+            <div className="flex items-center justify-center gap-4 text-xs">
+              <span className="text-gray-600">Heatmap:</span>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 bg-pink-600 border border-pink-700 rounded"></div>
+                <span>High availability</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 bg-pink-400 border border-pink-500 rounded"></div>
+                <span>Moderate</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 bg-pink-100 border border-pink-200 rounded"></div>
+                <span>Low availability</span>
+              </div>
+            </div>
+          </div>
           <div
             ref={gridRef}
             className="grid gap-0 select-none p-2 bg-gradient-to-br from-background to-muted/20 w-full overflow-x-auto overflow-y-auto max-h-[85vh]"
@@ -416,31 +440,52 @@ export function AvailabilityGrid({
                     >
                     {hoveredSlot === slotKey && tooltip.total > 0 && (
                       <div className="relative">
-                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 bg-black text-white text-xs rounded p-2 z-10 min-w-max">
-                          <div className="font-medium">{tooltip.date} at {tooltip.time}</div>
+                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 bg-black text-white text-xs rounded p-3 z-10 min-w-max shadow-lg">
+                          <div className="font-medium mb-1">{tooltip.date} at {tooltip.time}</div>
+
+                          {/* Heatmap score */}
+                          <div className="text-gray-300 mb-2">
+                            Score: {Math.round(getSlotHeatData(date, time).percentage * 100)}%
+                            ({getSlotHeatData(date, time).available}/{getSlotHeatData(date, time).total} available)
+                          </div>
+
                           {(() => {
                             const currentParticipantAvailability = currentParticipant ?
                               participants.find(p => p.participantId === currentParticipant.id)?.availability[slotKey] : null;
 
                             if (currentParticipantAvailability === 'available' || currentParticipantAvailability === 'maybe') {
-                              // After selection: show total participants
-                              return (
-                                <div className="text-gray-300">
-                                  {tooltip.total} participants
-                                </div>
-                              );
-                            } else {
-                              // Before selection: show available participants
+                              // After selection: show participants breakdown
                               return (
                                 <>
                                   {tooltip.available.length > 0 && (
-                                    <div className="text-green-300">
+                                    <div className="text-green-300 mb-1">
                                       ✓ Available: {tooltip.available.join(', ')}
                                     </div>
                                   )}
                                   {tooltip.maybe.length > 0 && (
                                     <div className="text-yellow-300">
                                       ? Maybe: {tooltip.maybe.join(', ')}
+                                    </div>
+                                  )}
+                                </>
+                              );
+                            } else {
+                              // Before selection: show available participants
+                              return (
+                                <>
+                                  {tooltip.available.length > 0 && (
+                                    <div className="text-green-300 mb-1">
+                                      ✓ Available: {tooltip.available.join(', ')}
+                                    </div>
+                                  )}
+                                  {tooltip.maybe.length > 0 && (
+                                    <div className="text-yellow-300 mb-1">
+                                      ? Maybe: {tooltip.maybe.join(', ')}
+                                    </div>
+                                  )}
+                                  {tooltip.available.length === 0 && tooltip.maybe.length === 0 && (
+                                    <div className="text-red-300">
+                                      No participants available
                                     </div>
                                   )}
                                 </>
