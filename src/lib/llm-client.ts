@@ -65,6 +65,21 @@ export class LocalLLMClient {
     }
   }
 
+  async chatStream(messages: ChatMessage[]): Promise<ReadableStream<string>> {
+    try {
+      // Ollama streaming chat format
+      if (this.config.endpoint.includes('ollama')) {
+        return await this.chatStreamOllama(messages);
+      }
+
+      // LocalAI/OpenAI-compatible streaming chat format
+      return await this.chatStreamOpenAI(messages);
+    } catch (error) {
+      console.error('LLM chat stream error:', error);
+      throw new Error(`LLM chat stream failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
   private async completionOllama(prompt: string, startTime: number): Promise<LLMResponse> {
     const response = await fetch(`${this.config.endpoint}/api/generate`, {
       method: 'POST',
@@ -199,6 +214,139 @@ export class LocalLLMClient {
       tokens: data.usage?.total_tokens,
       processingTime
     };
+  }
+
+  private async chatStreamOllama(messages: ChatMessage[]): Promise<ReadableStream<string>> {
+    const response = await fetch(`${this.config.endpoint}/api/chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: this.config.model,
+        messages: messages,
+        stream: true,
+        options: {
+          temperature: this.config.temperature,
+          num_predict: this.config.maxTokens,
+        }
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Ollama API error: ${response.status} ${response.statusText}`);
+    }
+
+    const stream = new ReadableStream({
+      async start(controller) {
+        const reader = response.body?.getReader();
+        if (!reader) {
+          controller.close();
+          return;
+        }
+
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = new TextDecoder().decode(value);
+            const lines = chunk.split('\n').filter(line => line.trim());
+
+            for (const line of lines) {
+              try {
+                const data = JSON.parse(line);
+                if (data.message?.content) {
+                  controller.enqueue(data.message.content);
+                }
+                if (data.done) {
+                  controller.close();
+                  return;
+                }
+              } catch (e) {
+                // Skip invalid JSON lines
+              }
+            }
+          }
+        } catch (error) {
+          controller.error(error);
+        } finally {
+          reader.releaseLock();
+        }
+      }
+    });
+
+    return stream;
+  }
+
+  private async chatStreamOpenAI(messages: ChatMessage[]): Promise<ReadableStream<string>> {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    if (this.config.apiKey) {
+      headers['Authorization'] = `Bearer ${this.config.apiKey}`;
+    }
+
+    const response = await fetch(`${this.config.endpoint}/v1/chat/completions`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        model: this.config.model,
+        messages: messages,
+        temperature: this.config.temperature,
+        max_tokens: this.config.maxTokens,
+        stream: true
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`LocalAI API error: ${response.status} ${response.statusText}`);
+    }
+
+    const stream = new ReadableStream({
+      async start(controller) {
+        const reader = response.body?.getReader();
+        if (!reader) {
+          controller.close();
+          return;
+        }
+
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = new TextDecoder().decode(value);
+            const lines = chunk.split('\n').filter(line => line.trim() && line.startsWith('data:'));
+
+            for (const line of lines) {
+              const data = line.replace('data: ', '');
+              if (data === '[DONE]') {
+                controller.close();
+                return;
+              }
+
+              try {
+                const parsed = JSON.parse(data);
+                const content = parsed.choices?.[0]?.delta?.content;
+                if (content) {
+                  controller.enqueue(content);
+                }
+              } catch (e) {
+                // Skip invalid JSON lines
+              }
+            }
+          }
+        } catch (error) {
+          controller.error(error);
+        } finally {
+          reader.releaseLock();
+        }
+      }
+    });
+
+    return stream;
   }
 
   async listModels(): Promise<string[]> {

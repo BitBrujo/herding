@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Calendar, Clock, MapPin, ArrowLeft, X, Gamepad2, ChevronDown, ChevronRight } from 'lucide-react';
 import { ParticipantIcon } from '@/components/icons/ParticipantIcon';
 import { COMMON_TIMEZONES, detectUserTimezone } from '@/lib/timezone-utils';
-import { LLMPromptBox } from '@/components/LLMPromptBox';
+import { AIRobotButton } from '@/components/AIRobotButton';
 
 interface MeetingData {
   title: string;
@@ -276,8 +276,8 @@ export function MeetingCreator({ onMeetingCreated, onCancel }: MeetingCreatorPro
             </div>
           )}
 
-          {/* LLM Prompt Box */}
-          <LLMPromptBox onParameterUpdate={handleParameterUpdate} />
+          {/* AI Robot Help Button */}
+          <AIRobotButton onParameterUpdate={handleParameterUpdate} />
         </form>
       </CardContent>
     </Card>
