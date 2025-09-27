@@ -225,7 +225,7 @@ export function useRealtime(
         channelRef.current = null;
       }
     };
-  }, [config.channelName, subscribe]); // Subscribe when channel name changes
+  }, [config.channelName]); // Subscribe when channel name changes
 
   return {
     state,
