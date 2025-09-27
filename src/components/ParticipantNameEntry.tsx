@@ -15,6 +15,7 @@ interface ParticipantNameEntryProps {
   startTime: string;
   endTime: string;
   participantCount: number;
+  maxParticipants?: number;
 }
 
 export function ParticipantNameEntry({
@@ -25,9 +26,18 @@ export function ParticipantNameEntry({
   endDate,
   startTime,
   endTime,
-  participantCount
+  participantCount,
+  maxParticipants
 }: ParticipantNameEntryProps) {
   const [name, setName] = useState('');
+
+  // Helper function to format time in 12-hour format
+  const formatTime12Hour = (time24: string): string => {
+    const [hour, minute] = time24.split(':').map(Number);
+    const period = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+    return `${displayHour}:${minute.toString().padStart(2, '0')} ${period}`;
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -109,7 +119,7 @@ export function ParticipantNameEntry({
 
           <div className="flex-shrink-0 flex flex-col">
             <label className="block text-sm font-medium mb-2 text-left">
-              Event Details
+              Herd Details
             </label>
             <div className="p-3 bg-muted/30 rounded-lg text-sm text-muted-foreground flex-1 flex">
               <div className="flex flex-col items-start justify-center gap-3 w-full">
@@ -119,11 +129,11 @@ export function ParticipantNameEntry({
                 </div>
                 <div className="flex items-center gap-2">
                   <Clock className="h-6 w-6" />
-                  {startTime} - {endTime}
+                  {formatTime12Hour(startTime)} - {formatTime12Hour(endTime)}
                 </div>
                 <div className="flex items-center gap-2">
                   <ParticipantIcon className="h-6 w-6" />
-                  {participantCount} Katz
+                  {participantCount}{maxParticipants ? ` / ${maxParticipants}` : ''} Katz
                 </div>
               </div>
             </div>

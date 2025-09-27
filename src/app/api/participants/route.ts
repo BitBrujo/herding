@@ -21,10 +21,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if event exists
+    // Check if event exists and get max participants
     const { data: event } = await supabase
       .from('events')
-      .select('id')
+      .select('id, max_participants')
       .eq('id', event_id)
       .single();
 
@@ -32,6 +32,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Event not found' },
         { status: 404 }
+      );
+    }
+
+    // Check current participant count against max_participants limit
+    const { count: participantCount } = await supabase
+      .from('participants')
+      .select('*', { count: 'exact', head: true })
+      .eq('event_id', event_id);
+
+    if (participantCount !== null && event.max_participants && participantCount >= event.max_participants) {
+      return NextResponse.json(
+        { error: `Event is full. Maximum ${event.max_participants} participants allowed.` },
+        { status: 409 }
       );
     }
 

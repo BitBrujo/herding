@@ -32,7 +32,7 @@ export default function Home() {
             onClick={() => window.location.href = '/create'}
           >
             <Calendar className="mr-2 h-5 w-5" />
-            Create Event
+            Create Herd
           </Button>
           <Button
             variant="outline"
@@ -41,7 +41,7 @@ export default function Home() {
             onClick={() => setShowJoinModal(true)}
           >
             <Users className="mr-2 h-5 w-5" />
-            Join Event
+            Join Herd
           </Button>
           <Button
             variant="outline"
@@ -50,24 +50,24 @@ export default function Home() {
             onClick={() => setShowSignup(true)}
           >
             <UserPlus className="mr-2 h-5 w-5" />
-            Sign Up
+            Login (optional)
           </Button>
         </div>
       </div>
 
-      {/* Join Event Modal */}
+      {/* Join Herd Modal */}
       {showJoinModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-background border border-border rounded-lg p-6 w-full max-w-md mx-4">
-            <h2 className="text-xl font-semibold mb-4">Join Event</h2>
+            <h2 className="text-xl font-semibold mb-4">Join Herd</h2>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Event Code or Link
+                  Herd Code or Link
                 </label>
                 <input
                   type="text"
-                  placeholder="Enter event code or paste link"
+                  placeholder="Enter herd code or paste link"
                   value={joinInput}
                   onChange={(e) => setJoinInput(e.target.value)}
                   className="w-full p-3 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
@@ -91,7 +91,7 @@ export default function Home() {
                   }}
                   disabled={!joinInput.trim()}
                 >
-                  Join Event
+                  Join Herd
                 </Button>
                 <Button
                   variant="outline"

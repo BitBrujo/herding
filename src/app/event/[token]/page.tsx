@@ -356,6 +356,7 @@ export default function EventPage({ params }: EventPageProps) {
             startTime={event.start_time}
             endTime={event.end_time}
             participantCount={participantAvailability.length}
+            maxParticipants={event.max_participants}
           />
         </div>
       </AppShell>
