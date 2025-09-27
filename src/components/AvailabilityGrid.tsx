@@ -364,24 +364,6 @@ export function AvailabilityGrid({
         </CardHeader>
 
         <CardContent className="p-0">
-          {/* Heatmap legend */}
-          <div className="px-4 py-2 bg-gray-50 border-b">
-            <div className="flex items-center justify-center gap-4 text-xs">
-              <span className="text-gray-600">Heatmap:</span>
-              <div className="flex items-center gap-1">
-                <div className="w-3 h-3 bg-pink-600 border border-pink-700 rounded"></div>
-                <span>High availability</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <div className="w-3 h-3 bg-pink-400 border border-pink-500 rounded"></div>
-                <span>Moderate</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <div className="w-3 h-3 bg-pink-100 border border-pink-200 rounded"></div>
-                <span>Low availability</span>
-              </div>
-            </div>
-          </div>
           <div
             ref={gridRef}
             className="grid gap-0 select-none p-2 bg-gradient-to-br from-background to-muted/20 w-full overflow-x-auto overflow-y-auto max-h-[85vh]"
@@ -459,7 +441,7 @@ export function AvailabilityGrid({
                                 <>
                                   {tooltip.available.length > 0 && (
                                     <div className="text-green-300 mb-1">
-                                      ✓ Available: {tooltip.available.join(', ')}
+                                      ✓ Can attend: {tooltip.available.join(', ')}
                                     </div>
                                   )}
                                   {tooltip.maybe.length > 0 && (
@@ -475,7 +457,7 @@ export function AvailabilityGrid({
                                 <>
                                   {tooltip.available.length > 0 && (
                                     <div className="text-green-300 mb-1">
-                                      ✓ Available: {tooltip.available.join(', ')}
+                                      ✓ Can attend: {tooltip.available.join(', ')}
                                     </div>
                                   )}
                                   {tooltip.maybe.length > 0 && (
@@ -485,7 +467,7 @@ export function AvailabilityGrid({
                                   )}
                                   {tooltip.available.length === 0 && tooltip.maybe.length === 0 && (
                                     <div className="text-red-300">
-                                      No participants available
+                                      No participants can attend
                                     </div>
                                   )}
                                 </>
