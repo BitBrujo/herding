@@ -194,7 +194,7 @@ export function MeetingCreator({ onMeetingCreated, onCancel }: MeetingCreatorPro
               ) : (
                 <ChevronRight className="h-4 w-4" />
               )}
-              Herd Options (for picky Katz)
+              Options (for picky katz)
             </Button>
           </div>
 
