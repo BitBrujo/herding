@@ -18,6 +18,9 @@ interface EventPageProps {
   params: Promise<{
     token: string;
   }>;
+  searchParams?: Promise<{
+    participant?: string;
+  }>;
 }
 
 interface ParticipantAvailability {
@@ -51,8 +54,10 @@ const formatTimeTo24Hour = (time12: string): string => {
   return `${hour24.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}:00`;
 };
 
-export default function EventPage({ params }: EventPageProps) {
+export default function EventPage({ params, searchParams }: EventPageProps) {
   const { token } = use(params);
+  const searchParamsData = searchParams ? use(searchParams) : {};
+  const participantId = searchParamsData.participant;
   const [event, setEvent] = useState<Event | null>(null);
   const [currentParticipant, setCurrentParticipant] = useState<Participant | null>(null);
   const [participantAvailability, setParticipantAvailability] = useState<ParticipantAvailability[]>([]);
@@ -164,6 +169,14 @@ export default function EventPage({ params }: EventPageProps) {
         }));
 
         setParticipantAvailability(availabilityData);
+
+        // If participant ID is provided in URL, set as current participant
+        if (participantId) {
+          const foundParticipant = eventParticipants.find((p: Participant) => p.id === participantId);
+          if (foundParticipant) {
+            setCurrentParticipant(foundParticipant);
+          }
+        }
       }
 
     } catch (err) {
