@@ -154,6 +154,28 @@ export function AvailabilityGrid({
     };
   };
 
+  // Get inner border styles to show multiple participants
+  const getInnerBorderStyle = (date: string, time: string) => {
+    const slotKey = `${date}-${time}`;
+    const availableParticipants = participants.filter(p =>
+      p.availability[slotKey] === 'available'
+    );
+    const maybeParticipants = participants.filter(p =>
+      p.availability[slotKey] === 'maybe'
+    );
+
+    const totalResponses = availableParticipants.length + maybeParticipants.length;
+
+    if (totalResponses <= 1) return undefined;
+
+    // Create inner borders for each additional participant
+    const borderWidths = Math.min(totalResponses - 1, 3); // Max 3 inner borders
+    return Array.from({ length: borderWidths }, (_, i) => {
+      const offset = (i + 1) * 2;
+      return `inset ${offset}px ${offset}px 0 0 rgba(34, 197, 94, 0.4), inset -${offset}px -${offset}px 0 0 rgba(34, 197, 94, 0.4)`;
+    }).join(', ');
+  };
+
   // Get color based on availability percentage
   const getSlotColor = (date: string, time: string) => {
     const heat = getSlotHeatData(date, time);
@@ -166,31 +188,31 @@ export function AvailabilityGrid({
 
     if (currentParticipant && currentAvailability) {
       if (currentAvailability === 'available') {
-        // Pink shades when current participant is available - darker = more participants available
-        if (heat.percentage > 0.8) return 'bg-pink-600 border-pink-700 text-white';
-        if (heat.percentage > 0.6) return 'bg-pink-500 border-pink-600 text-white';
-        if (heat.percentage > 0.4) return 'bg-pink-400 border-pink-500';
-        if (heat.percentage > 0.2) return 'bg-pink-300 border-pink-400';
-        return 'bg-pink-200 border-pink-300';
+        // Green shades when current participant is available - darker = more participants available
+        if (heat.percentage > 0.8) return 'bg-green-600 border-green-700 text-white';
+        if (heat.percentage > 0.6) return 'bg-green-500 border-green-600 text-white';
+        if (heat.percentage > 0.4) return 'bg-green-400 border-green-500';
+        if (heat.percentage > 0.2) return 'bg-green-300 border-green-400';
+        return 'bg-green-200 border-green-300';
       } else if (currentAvailability === 'maybe') {
-        // Light pink for maybe
-        return 'bg-pink-100 border-pink-200';
+        // Light green for maybe (avoiding pale green, using green-200)
+        return 'bg-green-200 border-green-300';
       } else {
         // Gray for unavailable
         return 'bg-gray-100 border-gray-300';
       }
     }
 
-    // Heat map colors for viewing mode - pink gradient (light to dark)
+    // Heat map colors for viewing mode - green gradient (light to dark)
     if (heat.total === 0) return 'bg-gray-50 border-gray-200';
 
-    // High availability = Darker pink (better choice)
-    if (heat.percentage > 0.8) return 'bg-pink-600 border-pink-700 text-white';
-    if (heat.percentage > 0.6) return 'bg-pink-500 border-pink-600 text-white';
-    if (heat.percentage > 0.4) return 'bg-pink-400 border-pink-500';
-    if (heat.percentage > 0.2) return 'bg-pink-300 border-pink-400';
-    // Low availability = Light pink (poor choice)
-    return 'bg-pink-100 border-pink-200';
+    // High availability = Darker green (better choice)
+    if (heat.percentage > 0.8) return 'bg-green-600 border-green-700 text-white';
+    if (heat.percentage > 0.6) return 'bg-green-500 border-green-600 text-white';
+    if (heat.percentage > 0.4) return 'bg-green-400 border-green-500';
+    if (heat.percentage > 0.2) return 'bg-green-300 border-green-400';
+    // Low availability = Light green (avoiding pale green)
+    return 'bg-green-200 border-green-300';
   };
 
   // Handle mouse events for drag selection
@@ -389,12 +411,12 @@ export function AvailabilityGrid({
                   </Button>
                 </div>
               ) : (
-                <div className="bg-blue-500 border border-blue-600 rounded-lg px-4 py-2 w-full flex items-center justify-center h-10">
-                  <CardTitle className="text-lg font-bold text-center text-blue-100">
+                <div className="bg-green-600 border border-green-700 rounded-lg px-6 py-4 w-full flex items-center justify-center min-h-16">
+                  <CardTitle className="text-2xl md:text-3xl font-bold text-center text-green-100 leading-tight">
                     {event.title}
                     {currentParticipant && (
                       <>
-                        <span className="text-lg text-blue-200"> with </span>
+                        <span className="text-2xl md:text-3xl text-green-200"> with </span>
                         {currentParticipant.name}
                       </>
                     )}
@@ -466,41 +488,43 @@ export function AvailabilityGrid({
         <CardContent className="p-0">
           <div
             ref={gridRef}
-            className="availability-grid grid gap-0 select-none p-2 bg-gradient-to-br from-background to-muted/20 w-full overflow-x-auto overflow-y-auto max-h-[85vh] touch-pan-y"
+            className="availability-grid grid gap-0 select-none bg-gradient-to-br from-background to-muted/20 w-full overflow-x-auto overflow-y-auto max-h-[85vh] touch-pan-y"
             style={{
               gridTemplateColumns: `auto repeat(${timeLabels.length}, clamp(28px, 4vw, 55px))`,
             }}
           >
-            {/* Header row with times */}
-            <div className="sticky top-0 bg-background"></div>
-            {timeLabels.map(time => (
-              <div
-                key={time}
-                className="text-xs text-center py-1 font-semibold text-foreground border-b border-border sticky top-0 bg-background/90 backdrop-blur-sm"
-              >
-                {time}
+            {/* Header row with corner square and times */}
+            {/* Corner square with icon - part of date column */}
+            <div className="sticky top-0 left-0 bg-gray-700 h-12 w-[50px] z-30 flex items-center justify-center border-r border-border">
+              <div className="w-6 h-6 bg-gray-700 rounded-full flex items-center justify-center border-2 border-white">
+                <ChevronRight className="h-4 w-4 text-white" />
               </div>
-            ))}
+            </div>
+            {timeLabels.map(time => {
+              // Only show labels for full hours (when minutes are :00)
+              const shouldShowLabel = time.includes(':00');
+              return (
+                <div
+                  key={time}
+                  className="text-xs text-center py-1 font-semibold text-white border-b border-border sticky top-0 bg-gray-700 h-12 flex items-center justify-center"
+                >
+                  {shouldShowLabel ? time : ''}
+                </div>
+              );
+            })}
 
           {/* Grid rows for each date */}
-          {dates.map((date, index) => (
+          {dates.map((date) => (
               <React.Fragment key={date}>
                 {/* Date label */}
-                <div className="text-xs font-semibold py-1 px-2 text-center border-r border-border bg-blue-500 sticky left-0 z-10 w-[50px] h-8 rounded-l-lg relative flex items-center justify-center">
-                  {index === 0 && (
-                    <div className="absolute -top-8 left-1/2 transform -translate-x-1/2">
-                      <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center border-2 border-white">
-                        <ChevronRight className="h-4 w-4 text-white" />
-                      </div>
-                    </div>
-                  )}
+                <div className="text-xs font-semibold py-1 px-2 text-center border-r border-border bg-gray-700 sticky left-0 z-20 w-[50px] h-12 relative flex items-center justify-center">
                   <div className="leading-tight">
-                    <div className="font-bold text-blue-100">
+                    <div className="font-bold text-white">
                       {new Date(date).toLocaleDateString('en-US', {
                         day: 'numeric'
                       })}
                     </div>
-                    <div className="text-[10px] text-blue-100">
+                    <div className="text-[10px] text-gray-300">
                       {new Date(date).toLocaleDateString('en-US', {
                         weekday: 'short'
                       })}
@@ -519,12 +543,15 @@ export function AvailabilityGrid({
                       data-date={date}
                       data-time={time}
                       className={`
-                        grid-cell h-8 border rounded cursor-pointer transition-all duration-150 relative min-h-[44px] sm:min-h-[32px]
+                        grid-cell h-12 border cursor-pointer transition-all duration-150 relative min-h-[48px] sm:min-h-[48px]
                         ${getSlotColor(date, time)}
-                        ${hoveredSlot === slotKey ? 'ring-2 ring-blue-300 scale-105 z-20' : ''}
+                        ${hoveredSlot === slotKey ? 'ring-2 ring-purple-300 scale-105 z-20' : ''}
                         ${currentParticipant ? 'hover:scale-102 hover:shadow-sm' : ''}
                         ${dragState.isDragging ? '' : ''}
                       `}
+                      style={{
+                        boxShadow: getInnerBorderStyle(date, time)
+                      }}
                       onMouseDown={() => handleMouseDown(date, time)}
                       onMouseEnter={() => handleMouseEnter(date, time)}
                       onMouseLeave={handleMouseLeave}
