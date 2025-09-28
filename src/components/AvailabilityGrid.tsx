@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Share2, Copy, X, ChevronRight } from 'lucide-react';
+import { Share2, Copy, X, ChevronRight, Square, CheckCircle } from 'lucide-react';
 import { ParticipantIcon } from '@/components/icons/ParticipantIcon';
 import { RealtimeStatus } from '@/components/RealtimeStatus';
 
@@ -50,6 +50,11 @@ interface AvailabilityGridProps {
     error: string | null;
     lastActivity: Date | null;
   };
+  isOrganizer?: boolean;
+  isEventFinalized?: boolean;
+  finalizedSlot?: { date: string; time: string } | null;
+  showFinalizationAnimation?: boolean;
+  onFinalizationClick?: () => void;
 }
 
 export function AvailabilityGrid({
@@ -64,6 +69,11 @@ export function AvailabilityGrid({
   onKatzClick,
   showParticipantList = false,
   realtimeState,
+  isOrganizer = false,
+  isEventFinalized = false,
+  finalizedSlot,
+  showFinalizationAnimation = false,
+  onFinalizationClick,
 }: AvailabilityGridProps) {
   const [dragState, setDragState] = useState<{
     isDragging: boolean;
@@ -174,10 +184,18 @@ export function AvailabilityGrid({
     const heat = getSlotHeatData(date, time);
     const slotKey = `${date}-${time}`;
 
+    // Check if this is the finalized slot
+    const isFinalized = finalizedSlot && finalizedSlot.date === date && finalizedSlot.time === time;
+
     // Current participant's availability (if any)
     const currentAvailability = currentParticipant
       ? participants.find(p => p.participantId === currentParticipant.id)?.availability[slotKey]
       : null;
+
+    // If this slot is finalized, use special styling
+    if (isFinalized) {
+      return 'bg-pink-500 border-pink-600 text-white font-bold';
+    }
 
     if (currentParticipant && currentAvailability) {
       if (currentAvailability === 'available') {
@@ -347,6 +365,16 @@ export function AvailabilityGrid({
     };
   };
 
+  // Get animation classes for finalized slot
+  const getAnimationClasses = (date: string, time: string) => {
+    const isFinalized = finalizedSlot && finalizedSlot.date === date && finalizedSlot.time === time;
+    if (isFinalized && showFinalizationAnimation) {
+      console.log('Applying animation to slot:', { date, time, finalizedSlot, showFinalizationAnimation });
+      return 'animate-pulse-pink-green';
+    }
+    return '';
+  };
+
   return (
     <div className="w-full max-w-4xl mx-auto">
       <Card className="border-0 shadow-lg">
@@ -401,7 +429,7 @@ export function AvailabilityGrid({
             })}
 
           {/* Grid rows for each date */}
-          {dates.map((date, index) => (
+          {dates.map((date) => (
               <React.Fragment key={date}>
                 {/* Date label */}
                 <div className="text-xs font-semibold py-1 px-2 text-center border-r border-border bg-gray-700 sticky left-0 z-20 w-[50px] h-12 relative flex items-center justify-center">
@@ -435,6 +463,7 @@ export function AvailabilityGrid({
                         ${hoveredSlot === slotKey ? 'ring-2 ring-purple-300 scale-105 z-20' : ''}
                         ${currentParticipant ? 'hover:scale-102 hover:shadow-sm' : ''}
                         ${dragState.isDragging ? '' : ''}
+                        ${getAnimationClasses(date, time)}
                       `}
                       style={{
                         boxShadow: getInnerBorderStyle(date, time)
@@ -590,6 +619,30 @@ export function AvailabilityGrid({
                 className="p-1 h-6 w-6 flex-shrink-0"
               >
                 <X className="h-3 w-3" />
+              </Button>
+            </div>
+          )}
+
+          {/* Stop!!! Button for organizer */}
+          {isOrganizer && (
+            <div className="mt-4">
+              <Button
+                variant={isEventFinalized ? "outline" : "destructive"}
+                onClick={onFinalizationClick}
+                disabled={isEventFinalized}
+                className="w-full flex items-center justify-center gap-2 h-12 text-lg font-bold"
+              >
+                {isEventFinalized ? (
+                  <>
+                    <CheckCircle className="h-5 w-5" />
+                    Final
+                  </>
+                ) : (
+                  <>
+                    <Square className="h-5 w-5" />
+                    Stop!!!
+                  </>
+                )}
               </Button>
             </div>
           )}

@@ -4,11 +4,11 @@ import React, { useState, useEffect, use } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
 import { AvailabilityGrid } from '@/components/AvailabilityGrid';
 import { ParticipantNameEntry } from '@/components/ParticipantNameEntry';
+import { FinalizationDialog } from '@/components/FinalizationDialog';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import {
-  Calendar,
-  CheckCircle
+  Calendar
 } from 'lucide-react';
 import { Event, Participant } from '@/lib/types';
 import { useRealtime } from '@/lib/useRealtime';
@@ -64,11 +64,15 @@ export default function EventPage({ params, searchParams }: EventPageProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isJoining, setIsJoining] = useState(false);
-  const [isOrganizer] = useState(false);
+  const [isOrganizer, setIsOrganizer] = useState(false);
   const [showShareInfo, setShowShareInfo] = useState(false);
   const [showParticipantList, setShowParticipantList] = useState(false);
+  const [showFinalizationDialog, setShowFinalizationDialog] = useState(false);
+  const [isFinalizationLoading, setIsFinalizationLoading] = useState(false);
+  const [finalizedSlot, setFinalizedSlot] = useState<{ date: string; time: string } | null>(null);
+  const [showFinalizationAnimation, setShowFinalizationAnimation] = useState(false);
 
-  // Real-time subscription for availability changes
+  // Real-time subscription for availability changes and event updates
   const handleRealtimeChange = (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
     if (payload.table === 'availability' && event) {
       const availability = payload.new as { participant_id: string; date: string; start_time: string; status: string };
@@ -91,6 +95,33 @@ export default function EventPage({ params, searchParams }: EventPageProps) {
             : p
         )
       );
+    } else if (payload.table === 'events' && event && payload.new) {
+      const updatedEvent = payload.new as Event;
+
+      // If event was finalized by someone else
+      if (updatedEvent.id === event.id && updatedEvent.is_finalized && !event.is_finalized) {
+        setEvent(updatedEvent);
+
+        // Trigger animation for all users
+        setShowFinalizationAnimation(true);
+        setTimeout(() => setShowFinalizationAnimation(false), 5000);
+      }
+    } else if (payload.table === 'meeting_slots' && event && payload.new) {
+      const meetingSlot = payload.new as { event_id: string; date: string; start_time: string; is_final: boolean };
+
+      // If this is a finalized slot for our event
+      if (meetingSlot.event_id === event.id && meetingSlot.is_final) {
+        // Convert database time back to 12-hour format
+        const time12Hour = formatTimeTo12Hour(meetingSlot.start_time);
+        setFinalizedSlot({
+          date: meetingSlot.date,
+          time: time12Hour
+        });
+
+        // Trigger animation
+        setShowFinalizationAnimation(true);
+        setTimeout(() => setShowFinalizationAnimation(false), 5000);
+      }
     }
   };
 
@@ -102,6 +133,16 @@ export default function EventPage({ params, searchParams }: EventPageProps) {
           table: 'availability',
           filter: event ? `event_id=eq.${event.id}` : '',
           event: '*'
+        },
+        {
+          table: 'events',
+          filter: event ? `id=eq.${event.id}` : '',
+          event: 'UPDATE'
+        },
+        {
+          table: 'meeting_slots',
+          filter: event ? `event_id=eq.${event.id}` : '',
+          event: 'INSERT'
         }
       ],
       onConnect: () => console.log('Real-time connected'),
@@ -175,6 +216,29 @@ export default function EventPage({ params, searchParams }: EventPageProps) {
           const foundParticipant = eventParticipants.find((p: Participant) => p.id === participantId);
           if (foundParticipant) {
             setCurrentParticipant(foundParticipant);
+
+            // Check if this participant is the organizer
+            // For anonymous events, the first participant (earliest created_at) is the organizer
+            const isFirstParticipant = eventParticipants.length > 0 &&
+              eventParticipants.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())[0].id === foundParticipant.id;
+
+            const isOrganizerByName = foundParticipant.name === foundEvent.organizer_name;
+            const isOrganizerByRole = foundParticipant.role === 'organizer';
+            const isOrganizerByFirst = foundEvent.organizer_name === 'Anonymous Organizer' && isFirstParticipant;
+            const finalIsOrganizer = isOrganizerByName || isOrganizerByRole || isOrganizerByFirst;
+
+            console.log('Organizer detection:', {
+              participantName: foundParticipant.name,
+              eventOrganizerName: foundEvent.organizer_name,
+              participantRole: foundParticipant.role,
+              isFirstParticipant,
+              isOrganizerByName,
+              isOrganizerByRole,
+              isOrganizerByFirst,
+              finalIsOrganizer
+            });
+
+            setIsOrganizer(finalIsOrganizer);
           }
         }
       }
@@ -212,6 +276,24 @@ export default function EventPage({ params, searchParams }: EventPageProps) {
 
       const { participant } = await response.json();
       setCurrentParticipant(participant);
+
+      // Check if this participant is the organizer
+      if (event) {
+        // Load all participants to check if this is the first one
+        const participantsResponse = await fetch(`/api/participants?event_id=${event.id}`);
+        if (participantsResponse.ok) {
+          const { participants: allParticipants } = await participantsResponse.json();
+          const isFirstParticipant = allParticipants.length > 0 &&
+            allParticipants.sort((a: Participant, b: Participant) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())[0].id === participant.id;
+
+          setIsOrganizer(
+            participant.name === event.organizer_name ||
+            participant.role === 'organizer' ||
+            (event.organizer_name === 'Anonymous Organizer' && isFirstParticipant)
+          );
+        }
+      }
+
       await loadEventData(); // Refresh data
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to join event');
@@ -295,6 +377,106 @@ export default function EventPage({ params, searchParams }: EventPageProps) {
     }
   };
 
+  const getOrganizerSelectedSlot = (): { date: string; time: string } | null => {
+    if (!currentParticipant || !isOrganizer) return null;
+
+    const organizerAvailability = participantAvailability.find(
+      p => p.participantId === currentParticipant.id
+    );
+
+    if (!organizerAvailability) return null;
+
+    // Find the first available slot for the organizer
+    for (const [slotKey, status] of Object.entries(organizerAvailability.availability)) {
+      if (status === 'available') {
+        console.log('Processing slot key:', slotKey);
+
+        // Slot keys are in format: "YYYY-MM-DD-H:MM AM/PM"
+        // We need to find the last hyphen that separates date from time
+        const lastHyphenIndex = slotKey.lastIndexOf('-');
+        if (lastHyphenIndex === -1) {
+          console.warn('Invalid slot key format:', slotKey);
+          continue;
+        }
+
+        const date = slotKey.substring(0, lastHyphenIndex);
+        const time = slotKey.substring(lastHyphenIndex + 1);
+
+        console.log('Parsed slot:', { slotKey, date, time });
+        return { date, time };
+      }
+    }
+
+    return null;
+  };
+
+  const handleFinalizationClick = () => {
+    const selectedSlot = getOrganizerSelectedSlot();
+    if (!selectedSlot) {
+      setError('Please select at least one time slot before finalizing.');
+      setTimeout(() => setError(null), 3000);
+      return;
+    }
+    setShowFinalizationDialog(true);
+  };
+
+  const handleFinalizationConfirm = async () => {
+    if (!event || !currentParticipant || !isOrganizer) {
+      console.log('Finalization blocked:', { event: !!event, currentParticipant: !!currentParticipant, isOrganizer });
+      return;
+    }
+
+    const selectedSlot = getOrganizerSelectedSlot();
+    if (!selectedSlot) {
+      console.log('No selected slot found');
+      return;
+    }
+
+    console.log('Starting finalization:', { eventId: event.id, organizerName: currentParticipant.name, selectedSlot });
+
+    try {
+      setIsFinalizationLoading(true);
+
+      const response = await fetch(`/api/meetings/${event.id}/finalize`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          organizer_name: currentParticipant.name,
+          selected_slot: selectedSlot
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Finalization failed:', response.status, errorData);
+        throw new Error(errorData.error || 'Failed to finalize meeting');
+      }
+
+      const { event: finalizedEvent } = await response.json();
+      console.log('Finalization successful:', finalizedEvent);
+
+      // Update local state
+      setEvent(finalizedEvent);
+      setFinalizedSlot(selectedSlot);
+      setShowFinalizationDialog(false);
+
+      // Trigger animation
+      console.log('Triggering finalization animation for slot:', selectedSlot);
+      setShowFinalizationAnimation(true);
+      setTimeout(() => {
+        console.log('Animation timeout completed, stopping animation');
+        setShowFinalizationAnimation(false);
+      }, 5000);
+
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to finalize meeting');
+      setTimeout(() => setError(null), 3000);
+    } finally {
+      setIsFinalizationLoading(false);
+    }
+  };
 
   const copyShareLink = async () => {
     try {
@@ -402,17 +584,21 @@ export default function EventPage({ params, searchParams }: EventPageProps) {
           }}
           showParticipantList={showParticipantList}
           realtimeState={realtimeState}
+          isOrganizer={isOrganizer}
+          isEventFinalized={event?.is_finalized || false}
+          finalizedSlot={finalizedSlot}
+          showFinalizationAnimation={showFinalizationAnimation}
+          onFinalizationClick={handleFinalizationClick}
         />
 
-        {/* Future organizer controls */}
-        {isOrganizer && (
-          <div className="flex justify-center mt-6 w-full max-w-lg mx-auto">
-            <Button className="flex items-center gap-2 flex-1">
-              <CheckCircle className="h-4 w-4" />
-              Finalize Meeting
-            </Button>
-          </div>
-        )}
+        {/* Finalization Dialog */}
+        <FinalizationDialog
+          isOpen={showFinalizationDialog}
+          onClose={() => setShowFinalizationDialog(false)}
+          onConfirm={handleFinalizationConfirm}
+          selectedSlot={getOrganizerSelectedSlot()}
+          isLoading={isFinalizationLoading}
+        />
       </div>
     </AppShell>
   );

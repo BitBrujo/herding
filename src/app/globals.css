@@ -286,3 +286,37 @@ html {
     font-size: 0.625rem;
   }
 }
+
+/* Finalization Animation */
+@keyframes pulse-pink-green {
+  0% {
+    background-color: #ec4899; /* Pink-500 */
+    border-color: #db2777; /* Pink-600 */
+    box-shadow: 0 0 0 0px rgba(236, 72, 153, 0.7);
+  }
+  25% {
+    background-color: #f9a8d4; /* Pink-300 */
+    border-color: #be185d; /* Pink-700 */
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.7);
+  }
+  50% {
+    background-color: #10b981; /* Green-500 */
+    border-color: #059669; /* Green-600 */
+    box-shadow: 0 0 0 8px rgba(236, 72, 153, 0.7);
+  }
+  75% {
+    background-color: #6ee7b7; /* Green-300 */
+    border-color: #047857; /* Green-700 */
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.7);
+  }
+  100% {
+    background-color: #ec4899; /* Pink-500 */
+    border-color: #db2777; /* Pink-600 */
+    box-shadow: 0 0 0 0px rgba(236, 72, 153, 0.7);
+  }
+}
+
+.animate-pulse-pink-green {
+  animation: pulse-pink-green 0.5s ease-in-out 10;
+  animation-fill-mode: both;
+}
