@@ -47,8 +47,23 @@ export function ParticipantNameEntry({
   };
 
   return (
-    <Card className="max-w-2xl mx-auto">
+    <Card className="w-full max-w-4xl mx-auto">
       <CardHeader className="text-center">
+        <div className="flex items-center justify-center gap-3 mb-2">
+          <ParticipantIcon className="h-10 w-10 text-primary" />
+          <h1 className="text-3xl font-bold text-foreground">
+            Enter Your Name
+          </h1>
+        </div>
+        <p className="text-lg text-muted-foreground mb-2">
+          find your herd
+        </p>
+        {participantCount >= 1 && (
+          <p className="text-sm text-muted-foreground">
+            There are Katz waiting.
+          </p>
+        )}
+        <div className="w-4/5 h-0.5 bg-border/60 mt-4 mx-auto"></div>
       </CardHeader>
       <CardContent>
         <div className="flex gap-4 items-stretch">
@@ -90,31 +105,6 @@ export function ParticipantNameEntry({
             </form>
 
             <div className="flex-1"></div>
-
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full border-green-500 text-green-500 hover:bg-green-50"
-            >
-              <div className="flex items-center gap-2">
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 240 238"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4"
-                >
-                  <path
-                    fillRule="evenodd"
-                    clipRule="evenodd"
-                    d="M213.467 10V24.5332H198.933V39.0669H184.4V24.5332H169.867V10H155.333V68.1333H140.8V53.6001H126.267V39.0669H68.1333V53.6001H53.6001V68.1333H39.0667V82.6665H24.5333V24.5332H39.0667V10H24.5333V24.5332H10V82.6665H24.5333V140.8H39.0667V213.467H53.6001V228H82.6667V213.467H68.1333V140.8H82.6667V126.267H97.2V111.733H111.733V126.267H126.267V140.8H140.8V155.333H155.333V213.467H169.867V228H198.933V213.467H184.4V169.867H198.933V126.267H213.467V97.2002H228V10H213.467ZM184.4 68.1333H169.867V53.6001H184.4V68.1333ZM213.467 68.1333H198.933V53.6001H213.467V68.1333Z"
-                    fill="currentColor"
-                  />
-                </svg>
-                Toys
-              </div>
-            </Button>
           </div>
 
           <div className="flex-shrink-0 flex flex-col">
