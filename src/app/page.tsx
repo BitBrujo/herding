@@ -202,7 +202,7 @@ export default function Home() {
             <h2 className="text-xl font-semibold mb-4">Join Herd</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2">
+                <label className="block text-sm font-medium mb-2 text-left">
                   Herd Code or Link
                 </label>
                 <input

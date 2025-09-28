@@ -55,9 +55,6 @@ export function ParticipantNameEntry({
             Enter Your Name
           </h1>
         </div>
-        <p className="text-lg text-muted-foreground mb-2">
-          find your herd
-        </p>
         {participantCount >= 1 && (
           <p className="text-sm text-muted-foreground">
             There are Katz waiting.
@@ -70,7 +67,7 @@ export function ParticipantNameEntry({
           <div className="flex-1 flex flex-col justify-between gap-4">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2">
+                <label className="block text-sm font-medium mb-2 text-left">
                   What&apos;s your name?
                 </label>
                 <input

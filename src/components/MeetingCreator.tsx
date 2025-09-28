@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Calendar, Clock, MapPin, ChevronDown, ChevronRight } from 'lucide-react';
@@ -41,6 +41,7 @@ export function MeetingCreator({ onMeetingCreated, onCancel }: MeetingCreatorPro
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
+  const advancedOptionsRef = useRef<HTMLDivElement>(null);
 
   const handleInputChange = (field: keyof MeetingData, value: string | number | boolean) => {
     setFormData(prev => ({
@@ -48,6 +49,22 @@ export function MeetingCreator({ onMeetingCreated, onCancel }: MeetingCreatorPro
       [field]: value
     }));
   };
+
+  // Scroll to advanced options when they expand
+  useEffect(() => {
+    if (showAdvancedOptions && advancedOptionsRef.current) {
+      // Use a small delay to allow the DOM to update with the expanded content
+      const timeoutId = setTimeout(() => {
+        advancedOptionsRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest', // Don't scroll unnecessarily if already visible
+          inline: 'nearest'
+        });
+      }, 100);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [showAdvancedOptions]);
 
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -130,7 +147,7 @@ export function MeetingCreator({ onMeetingCreated, onCancel }: MeetingCreatorPro
           <div className="flex gap-4 items-end">
             {/* Event Name */}
             <div className="flex-1">
-              <label className="block text-sm font-medium mb-2">
+              <label className="block text-sm font-medium mb-2 text-left">
                 Herd Name
               </label>
               <input
@@ -145,7 +162,7 @@ export function MeetingCreator({ onMeetingCreated, onCancel }: MeetingCreatorPro
 
             {/* Timezone */}
             <div className="flex-1">
-              <label className="block text-sm font-medium mb-2">
+              <label className="block text-sm font-medium mb-2 text-left">
                 <MapPin className="inline h-4 w-4 mr-1" />
                 Timezone
               </label>
@@ -200,12 +217,12 @@ export function MeetingCreator({ onMeetingCreated, onCancel }: MeetingCreatorPro
 
           {/* Advanced Options - Hidden by default */}
           {showAdvancedOptions && (
-            <div className="space-y-6 pt-2">
+            <div ref={advancedOptionsRef} className="space-y-6 pt-2">
               {/* Row: Start Date, Time Range, Max Participants */}
               <div className="flex gap-4 items-end">
                 {/* Start Date */}
                 <div className="flex-1">
-                  <label className="block text-sm font-medium mb-2">
+                  <label className="block text-sm font-medium mb-2 text-left">
                     <Calendar className="inline h-4 w-4 mr-1 text-white" />
                     Start Date (7 day range from selected date)
                   </label>
@@ -223,7 +240,7 @@ export function MeetingCreator({ onMeetingCreated, onCancel }: MeetingCreatorPro
 
                 {/* Time Range Dropdown */}
                 <div className="flex-1">
-                  <label className="block text-sm font-medium mb-2">
+                  <label className="block text-sm font-medium mb-2 text-left">
                     <Clock className="inline h-4 w-4 mr-1" />
                     Daily Time Range
                   </label>
@@ -250,7 +267,7 @@ export function MeetingCreator({ onMeetingCreated, onCancel }: MeetingCreatorPro
 
                 {/* Max Participants */}
                 <div className="w-24">
-                  <label className="block text-sm font-medium mb-2">
+                  <label className="block text-sm font-medium mb-2 text-left">
                     <ParticipantIcon className="inline h-4 w-4 mr-1" />
                     Max Katz
                   </label>
