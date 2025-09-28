@@ -360,7 +360,7 @@ export function AvailabilityGrid({
                     {event.title}
                     {currentParticipant && (
                       <>
-                        <span className="text-2xl md:text-3xl text-gray-700 dark:text-gray-300"> with </span>
+                        <span className="text-sm md:text-base text-gray-700 dark:text-gray-300"> with </span>
                         {currentParticipant.name}
                       </>
                     )}
@@ -372,7 +372,7 @@ export function AvailabilityGrid({
         </CardHeader>
 
         <CardContent className="p-0">
-          <div className="w-full overflow-x-auto">
+          <div className="w-full overflow-x-auto rounded-lg overflow-hidden">
             <div
               ref={gridRef}
               className="availability-grid grid gap-0 select-none bg-gradient-to-br from-background to-muted/20 w-full overflow-y-auto max-h-[85vh] touch-pan-y"
@@ -382,7 +382,7 @@ export function AvailabilityGrid({
             >
             {/* Header row with corner square and times */}
             {/* Corner square with icon - part of date column */}
-            <div className="sticky top-0 left-0 bg-gray-700 h-12 w-[50px] z-30 flex items-center justify-center border-r border-border rounded-tl-lg">
+            <div className="sticky top-0 left-0 bg-gray-700 h-12 w-[50px] z-30 flex items-center justify-center border-r border-border">
               <div className="w-6 h-6 bg-gray-700 rounded-full flex items-center justify-center border-2 border-white">
                 <ChevronRight className="h-4 w-4 text-white" />
               </div>
@@ -404,7 +404,7 @@ export function AvailabilityGrid({
           {dates.map((date, index) => (
               <React.Fragment key={date}>
                 {/* Date label */}
-                <div className={`text-xs font-semibold py-1 px-2 text-center border-r border-border bg-gray-700 sticky left-0 z-20 w-[50px] h-12 relative flex items-center justify-center ${index === dates.length - 1 ? 'rounded-bl-lg' : ''}`}>
+                <div className="text-xs font-semibold py-1 px-2 text-center border-r border-border bg-gray-700 sticky left-0 z-20 w-[50px] h-12 relative flex items-center justify-center">
                   <div className="leading-tight">
                     <div className="font-bold text-white">
                       {new Date(date).toLocaleDateString('en-US', {
@@ -567,7 +567,7 @@ export function AvailabilityGrid({
               }`}
             >
               <ParticipantIcon className="h-4 w-4" />
-              {participants.length} Katz
+              Playing Katz
             </Button>
           </div>
 
