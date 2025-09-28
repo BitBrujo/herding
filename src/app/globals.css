@@ -213,3 +213,40 @@
 .chat-messages-scroll::-webkit-scrollbar-thumb:hover {
   background: #f472b6;
 }
+
+/* Enhanced touch support for AvailabilityGrid */
+.touch-pan-y {
+  touch-action: pan-y;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* Improved mobile grid scrolling */
+@media (max-width: 768px) {
+  .availability-grid {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+
+  /* Larger touch targets on mobile */
+  .grid-cell {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Responsive grid improvements */
+@media (max-width: 640px) {
+  .grid-cell {
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .grid-cell {
+    font-size: 0.625rem;
+  }
+}

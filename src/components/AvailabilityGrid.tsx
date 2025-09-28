@@ -133,6 +133,7 @@ export function AvailabilityGrid({
   const dates = [...new Set(timeSlots.map(slot => slot.date))];
   const timeLabels = [...new Set(timeSlots.map(slot => slot.time))];
 
+
   // Get heat map data for each time slot
   const getSlotHeatData = (date: string, time: string) => {
     const slotKey = `${date}-${time}`;
@@ -240,19 +241,61 @@ export function AvailabilityGrid({
     setHoveredSlot(null);
   };
 
-  const handleMouseUp = () => {
+  const handleMouseUp = useCallback(() => {
     setDragState({
       isDragging: false,
       startSlot: null,
       dragMode: null
     });
+  }, []);
+
+  // Touch event handlers
+  const handleTouchStart = (date: string, time: string, event: React.TouchEvent) => {
+    event.preventDefault(); // Prevent default touch behaviors
+    handleMouseDown(date, time);
+  };
+
+  const handleTouchMove = (event: React.TouchEvent) => {
+    if (!dragState.isDragging) return;
+
+    event.preventDefault(); // Prevent scrolling during drag
+
+    const touch = event.touches[0];
+    if (!touch) return;
+
+    // Find the element under the touch point
+    const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+    if (!elementBelow) return;
+
+    // Find the closest cell element with data attributes
+    const cellElement = elementBelow.closest('[data-date][data-time]') as HTMLElement;
+    if (!cellElement) return;
+
+    const date = cellElement.dataset.date;
+    const time = cellElement.dataset.time;
+
+    if (date && time) {
+      handleMouseEnter(date, time);
+    }
+  };
+
+  const handleTouchEnd = (event: React.TouchEvent) => {
+    event.preventDefault();
+    handleMouseUp();
   };
 
   useEffect(() => {
     const handleGlobalMouseUp = () => handleMouseUp();
+    const handleGlobalTouchEnd = () => handleMouseUp();
+
     document.addEventListener('mouseup', handleGlobalMouseUp);
-    return () => document.removeEventListener('mouseup', handleGlobalMouseUp);
-  }, []);
+    document.addEventListener('touchend', handleGlobalTouchEnd);
+
+    return () => {
+      document.removeEventListener('mouseup', handleGlobalMouseUp);
+      document.removeEventListener('touchend', handleGlobalTouchEnd);
+    };
+  }, [handleMouseUp]);
 
   // Handle clicking outside status button to lower it
   useEffect(() => {
@@ -294,6 +337,7 @@ export function AvailabilityGrid({
       <Card className="border-0 shadow-lg">
         <CardHeader className="pb-4">
           <div className="space-y-4">
+
             {/* Title box, Share popup, or Participant list */}
             <div className="text-center">
               {showParticipantList ? (
@@ -422,9 +466,9 @@ export function AvailabilityGrid({
         <CardContent className="p-0">
           <div
             ref={gridRef}
-            className="grid gap-0 select-none p-2 bg-gradient-to-br from-background to-muted/20 w-full overflow-x-auto overflow-y-auto max-h-[85vh]"
+            className="availability-grid grid gap-0 select-none p-2 bg-gradient-to-br from-background to-muted/20 w-full overflow-x-auto overflow-y-auto max-h-[85vh] touch-pan-y"
             style={{
-              gridTemplateColumns: `auto repeat(${timeLabels.length}, minmax(35px, 45px))`,
+              gridTemplateColumns: `auto repeat(${timeLabels.length}, clamp(28px, 4vw, 55px))`,
             }}
           >
             {/* Header row with times */}
@@ -472,16 +516,21 @@ export function AvailabilityGrid({
                   return (
                     <div
                       key={slotKey}
+                      data-date={date}
+                      data-time={time}
                       className={`
-                        h-8 border rounded cursor-pointer transition-all duration-150 relative
+                        grid-cell h-8 border rounded cursor-pointer transition-all duration-150 relative min-h-[44px] sm:min-h-[32px]
                         ${getSlotColor(date, time)}
                         ${hoveredSlot === slotKey ? 'ring-2 ring-blue-300 scale-105 z-20' : ''}
                         ${currentParticipant ? 'hover:scale-102 hover:shadow-sm' : ''}
-                        ${dragState.isDragging ? 'pointer-events-none' : ''}
+                        ${dragState.isDragging ? '' : ''}
                       `}
                       onMouseDown={() => handleMouseDown(date, time)}
                       onMouseEnter={() => handleMouseEnter(date, time)}
                       onMouseLeave={handleMouseLeave}
+                      onTouchStart={(e) => handleTouchStart(date, time, e)}
+                      onTouchMove={handleTouchMove}
+                      onTouchEnd={handleTouchEnd}
                     >
                     {hoveredSlot === slotKey && tooltip.total > 0 && (
                       <div className="relative">

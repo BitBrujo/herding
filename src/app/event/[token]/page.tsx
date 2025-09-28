@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import {
   Calendar,
-  MessageSquare,
   CheckCircle
 } from 'lucide-react';
 import { Event, Participant } from '@/lib/types';

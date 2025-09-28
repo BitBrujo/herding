@@ -86,7 +86,7 @@ function formatTimeTo24Hour(time12: string): string {
   const match = time12.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
   if (!match) return '00:00';
 
-  let [, hourStr, minuteStr, period] = match;
+  const [, hourStr, minuteStr, period] = match;
   let hour = parseInt(hourStr);
   const minute = parseInt(minuteStr);
 
@@ -104,7 +104,7 @@ function generateTimeSlots(startTime: string, endTime: string): string[] {
   const start = new Date(`2000-01-01T${startTime}:00`);
   const end = new Date(`2000-01-01T${endTime}:00`);
 
-  let current = new Date(start);
+  const current = new Date(start);
   while (current < end) {
     const timeStr = current.toTimeString().slice(0, 5);
     slots.push(formatTimeTo12Hour(timeStr));
@@ -122,7 +122,7 @@ function getDatesForDayPattern(dayNumbers: number[], eventContext: EventContext)
   const endDate = new Date(eventContext.endDate);
   const dates: string[] = [];
 
-  let currentDate = new Date(startDate);
+  const currentDate = new Date(startDate);
   while (currentDate <= endDate) {
     if (dayNumbers.includes(currentDate.getDay())) {
       dates.push(currentDate.toISOString().split('T')[0]);
@@ -142,9 +142,8 @@ function parseSpecificTimes(text: string): string[] {
   let match;
 
   while ((match = timePattern.exec(text)) !== null) {
-    let [, hourStr, minuteStr = '00', period] = match;
+    const [, hourStr, minuteStr = '00', period] = match;
     let hour = parseInt(hourStr);
-    const minute = parseInt(minuteStr);
 
     // If no period specified and hour is <= 12, assume both AM and PM possibilities
     if (!period) {
@@ -188,8 +187,7 @@ function parseDayReferences(text: string, eventContext: EventContext): string[] 
   ];
 
   for (const pattern of datePatterns) {
-    let match;
-    while ((match = pattern.exec(text)) !== null) {
+    while (pattern.exec(text) !== null) {
       // For simplicity, we'll skip complex date parsing for now
       // In a production system, you'd want more robust date parsing
     }
@@ -199,7 +197,7 @@ function parseDayReferences(text: string, eventContext: EventContext): string[] 
   if (allDates.length === 0) {
     const startDate = new Date(eventContext.startDate);
     const endDate = new Date(eventContext.endDate);
-    let currentDate = new Date(startDate);
+    const currentDate = new Date(startDate);
 
     while (currentDate <= endDate) {
       allDates.push(currentDate.toISOString().split('T')[0]);
