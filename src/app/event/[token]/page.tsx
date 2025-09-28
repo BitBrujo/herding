@@ -59,7 +59,6 @@ export default function EventPage({ params }: EventPageProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isJoining, setIsJoining] = useState(false);
-  const [showChatWindow, setShowChatWindow] = useState(false);
   const [isOrganizer] = useState(false);
   const [showShareInfo, setShowShareInfo] = useState(false);
   const [showParticipantList, setShowParticipantList] = useState(false);
@@ -283,31 +282,6 @@ export default function EventPage({ params }: EventPageProps) {
     }
   };
 
-  const handleLLMAvailabilityUpdate = async (availabilityUpdates: { date: string; time: string; status: 'available' | 'unavailable' | 'maybe' }[]) => {
-    if (!currentParticipant || !event || !Array.isArray(availabilityUpdates)) return;
-
-    try {
-      // Process the availability updates directly from the chat window
-      console.log('🎯 EVENT PAGE: Received LLM availability updates:', availabilityUpdates);
-      console.log('🎯 EVENT PAGE: Current participant:', currentParticipant.name, currentParticipant.id);
-
-      for (const update of availabilityUpdates) {
-        if (update.date && update.time && update.status) {
-          console.log(`🎯 EVENT PAGE: Processing update - ${update.date} at ${update.time}: ${update.status}`);
-          await handleAvailabilityChange(
-            currentParticipant.id,
-            { date: update.date, time: update.time },
-            update.status
-          );
-          console.log(`✅ EVENT PAGE: Successfully processed update for ${update.date} at ${update.time}`);
-        }
-      }
-    } catch (error) {
-      console.error('Error processing LLM availability update:', error);
-      setError('Failed to process your availability preferences. Please try updating manually.');
-      setTimeout(() => setError(null), 3000);
-    }
-  };
 
   const copyShareLink = async () => {
     try {
@@ -415,9 +389,6 @@ export default function EventPage({ params }: EventPageProps) {
           }}
           showParticipantList={showParticipantList}
           realtimeState={realtimeState}
-          onLLMAvailabilityUpdate={handleLLMAvailabilityUpdate}
-          showChatWindow={showChatWindow}
-          onToggleChat={() => setShowChatWindow(!showChatWindow)}
         />
 
         {/* Future organizer controls */}

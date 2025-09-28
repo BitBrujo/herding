@@ -3,10 +3,9 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Share2, Copy, X, ChevronRight, MessageSquare } from 'lucide-react';
+import { Share2, Copy, X, ChevronRight } from 'lucide-react';
 import { ParticipantIcon } from '@/components/icons/ParticipantIcon';
 import { RealtimeStatus } from '@/components/RealtimeStatus';
-import { LLMChatWindow } from '@/components/LLMChatWindow';
 
 interface TimeSlot {
   date: string;
@@ -51,9 +50,6 @@ interface AvailabilityGridProps {
     error: string | null;
     lastActivity: Date | null;
   };
-  onLLMAvailabilityUpdate?: (updates: { date: string; time: string; status: 'available' | 'unavailable' | 'maybe' }[]) => void;
-  showChatWindow?: boolean;
-  onToggleChat?: () => void;
 }
 
 export function AvailabilityGrid({
@@ -68,9 +64,6 @@ export function AvailabilityGrid({
   onKatzClick,
   showParticipantList = false,
   realtimeState,
-  onLLMAvailabilityUpdate,
-  showChatWindow = false,
-  onToggleChat
 }: AvailabilityGridProps) {
   const [dragState, setDragState] = useState<{
     isDragging: boolean;
@@ -360,142 +353,36 @@ export function AvailabilityGrid({
         <CardHeader className="pb-4">
           <div className="space-y-4">
 
-            {/* Title box, Share popup, or Participant list */}
+            {/* Title box only */}
             <div className="text-center">
-              {showParticipantList ? (
-                <div className="bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-2 w-full flex items-center h-10">
-                  <span className="text-sm text-gray-600 dark:text-gray-400 flex-shrink-0 mr-2">All Katz {'→'}</span>
-                  <div className="flex items-center gap-2 overflow-x-auto flex-1 mr-2">
-                    {participants.map((participant) => (
-                      <div key={participant.participantId} className="flex items-center gap-1 text-sm whitespace-nowrap flex-shrink-0">
-                        <ParticipantIcon className="h-3 w-3" />
-                        <span className="text-xs">{participant.participantName}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={onKatzClick}
-                    className="p-1 h-6 w-6 flex-shrink-0"
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </div>
-              ) : showShareInfo ? (
-                <div className="bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-2 w-full flex items-center h-10">
-                  <span className="text-sm text-gray-600 dark:text-gray-400 flex-shrink-0 mr-2">Share this link</span>
-                  <div className="flex items-center gap-1 flex-1 mr-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={onCopyShareLink}
-                      className="p-1 h-6 w-6 flex-shrink-0"
-                    >
-                      <Copy className="h-3 w-3" />
-                    </Button>
-                    <input
-                      type="text"
-                      value={shareUrl || ''}
-                      readOnly
-                      className="p-1 border rounded bg-white dark:bg-gray-700 text-xs font-mono flex-1 h-6"
-                    />
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={onShareClick}
-                    className="p-1 h-6 w-6 flex-shrink-0"
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </div>
-              ) : (
-                <div className="bg-green-600 border border-green-700 rounded-lg px-6 py-4 w-full flex items-center justify-center min-h-16">
-                  <CardTitle className="text-2xl md:text-3xl font-bold text-center text-green-100 leading-tight">
+                <div className="bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-6 py-4 w-full flex items-center justify-center min-h-16">
+                  <CardTitle className="text-2xl md:text-3xl font-bold text-center text-gray-900 dark:text-gray-100 leading-tight">
                     {event.title}
                     {currentParticipant && (
                       <>
-                        <span className="text-2xl md:text-3xl text-green-200"> with </span>
+                        <span className="text-2xl md:text-3xl text-gray-700 dark:text-gray-300"> with </span>
                         {currentParticipant.name}
                       </>
                     )}
                   </CardTitle>
                 </div>
-              )}
-            </div>
-
-            {/* Share button, Live status, and Katz count below title */}
-            <div className="flex justify-center gap-4">
-              {onShareClick && (
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    // Cat meow sound effect
-                    if ('speechSynthesis' in window) {
-                      const utterance = new SpeechSynthesisUtterance('meow');
-                      utterance.rate = 1.5;
-                      utterance.pitch = 1.8;
-                      utterance.volume = 0.8;
-                      window.speechSynthesis.speak(utterance);
-                    }
-                    onShareClick();
-                  }}
-                  className={`flex items-center gap-2 flex-1 max-w-xs ${
-                    showShareInfo
-                      ? 'border-primary bg-primary/10'
-                      : 'border-gray-300 dark:border-gray-600 hover:border-gray-400'
-                  }`}
-                >
-                  <Share2 className="h-4 w-4" />
-                  Call More Katz
-                </Button>
-              )}
-
-              {/* Live status button */}
-              {realtimeState && (
-                <Button
-                  ref={statusButtonRef}
-                  variant="outline"
-                  onClick={() => {
-                    setStatusButtonRaised(!statusButtonRaised);
-                  }}
-                  className={`flex items-center gap-2 flex-1 max-w-xs border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 hover:border-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 relative transition-all duration-150 ${
-                    statusButtonRaised ? 'scale-[1.33] z-50' : 'scale-100'
-                  }`}
-                >
-                  <RealtimeStatus state={realtimeState} showText={true} />
-                </Button>
-              )}
-
-              <Button
-                variant="outline"
-                onClick={onKatzClick}
-                className={`flex items-center gap-2 flex-1 max-w-xs ${
-                  showParticipantList
-                    ? 'border-primary bg-primary/10'
-                    : 'border-gray-300 dark:border-gray-600 hover:border-gray-400'
-                }`}
-              >
-                <ParticipantIcon className="h-4 w-4" />
-                {participants.length} Katz
-              </Button>
             </div>
           </div>
 
         </CardHeader>
 
         <CardContent className="p-0">
-          <div
-            ref={gridRef}
-            className="availability-grid grid gap-0 select-none bg-gradient-to-br from-background to-muted/20 w-full overflow-x-auto overflow-y-auto max-h-[85vh] touch-pan-y"
-            style={{
-              gridTemplateColumns: `auto repeat(${timeLabels.length}, clamp(28px, 4vw, 55px))`,
-            }}
-          >
+          <div className="w-full overflow-x-auto">
+            <div
+              ref={gridRef}
+              className="availability-grid grid gap-0 select-none bg-gradient-to-br from-background to-muted/20 w-full overflow-y-auto max-h-[85vh] touch-pan-y"
+              style={{
+                gridTemplateColumns: `auto repeat(${timeLabels.length}, clamp(28px, 4vw, 55px))`,
+              }}
+            >
             {/* Header row with corner square and times */}
             {/* Corner square with icon - part of date column */}
-            <div className="sticky top-0 left-0 bg-gray-700 h-12 w-[50px] z-30 flex items-center justify-center border-r border-border">
+            <div className="sticky top-0 left-0 bg-gray-700 h-12 w-[50px] z-30 flex items-center justify-center border-r border-border rounded-tl-lg">
               <div className="w-6 h-6 bg-gray-700 rounded-full flex items-center justify-center border-2 border-white">
                 <ChevronRight className="h-4 w-4 text-white" />
               </div>
@@ -514,10 +401,10 @@ export function AvailabilityGrid({
             })}
 
           {/* Grid rows for each date */}
-          {dates.map((date) => (
+          {dates.map((date, index) => (
               <React.Fragment key={date}>
                 {/* Date label */}
-                <div className="text-xs font-semibold py-1 px-2 text-center border-r border-border bg-gray-700 sticky left-0 z-20 w-[50px] h-12 relative flex items-center justify-center">
+                <div className={`text-xs font-semibold py-1 px-2 text-center border-r border-border bg-gray-700 sticky left-0 z-20 w-[50px] h-12 relative flex items-center justify-center ${index === dates.length - 1 ? 'rounded-bl-lg' : ''}`}>
                   <div className="leading-tight">
                     <div className="font-bold text-white">
                       {new Date(date).toLocaleDateString('en-US', {
@@ -622,49 +509,124 @@ export function AvailabilityGrid({
             </React.Fragment>
           ))}
         </div>
-
+          </div>
 
         </CardContent>
 
-        {/* Chat button at bottom of grid */}
-        {currentParticipant && onToggleChat && (
-          <div className="p-4 border-t border-border bg-muted/30">
+        {/* Buttons below the grid */}
+        <div className="p-4 border-t border-border bg-muted/30">
+          <div className="flex justify-center gap-4 mb-4">
+            {onShareClick && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  // Cat meow sound effect
+                  if ('speechSynthesis' in window) {
+                    const utterance = new SpeechSynthesisUtterance('meow');
+                    utterance.rate = 1.5;
+                    utterance.pitch = 1.8;
+                    utterance.volume = 0.8;
+                    window.speechSynthesis.speak(utterance);
+                  }
+                  onShareClick();
+                }}
+                className={`flex items-center gap-2 flex-1 max-w-xs ${
+                  showShareInfo
+                    ? 'border-primary bg-primary/10'
+                    : 'border-gray-300 dark:border-gray-600 hover:border-gray-400'
+                }`}
+              >
+                <Share2 className="h-4 w-4" />
+                Call More Katz
+              </Button>
+            )}
+
+            {/* Live status button */}
+            {realtimeState && (
+              <Button
+                ref={statusButtonRef}
+                variant="outline"
+                onClick={() => {
+                  setStatusButtonRaised(!statusButtonRaised);
+                }}
+                className={`flex items-center gap-2 flex-1 max-w-xs border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 hover:border-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 relative transition-all duration-150 ${
+                  statusButtonRaised ? 'scale-[1.33] z-50' : 'scale-100'
+                }`}
+              >
+                <RealtimeStatus state={realtimeState} showText={true} />
+              </Button>
+            )}
+
             <Button
               variant="outline"
-              onClick={onToggleChat}
-              className={`w-full flex items-center justify-center gap-2 ${
-                showChatWindow
+              onClick={onKatzClick}
+              className={`flex items-center gap-2 flex-1 max-w-xs ${
+                showParticipantList
                   ? 'border-primary bg-primary/10'
                   : 'border-gray-300 dark:border-gray-600 hover:border-gray-400'
               }`}
             >
-              <MessageSquare className="h-4 w-4" />
-              {showChatWindow ? 'Hide Chat Assistant' : 'Show Chat Assistant'}
+              <ParticipantIcon className="h-4 w-4" />
+              {participants.length} Katz
             </Button>
           </div>
-        )}
+
+          {/* Share popup or Participant list below buttons */}
+          {showParticipantList && (
+            <div className="bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-2 w-full flex items-center h-10 mb-2">
+              <span className="text-sm text-gray-600 dark:text-gray-400 flex-shrink-0 mr-2">All Katz {'→'}</span>
+              <div className="flex items-center gap-2 overflow-x-auto flex-1 mr-2">
+                {participants.map((participant) => (
+                  <div key={participant.participantId} className="flex items-center gap-1 text-sm whitespace-nowrap flex-shrink-0">
+                    <ParticipantIcon className="h-3 w-3" />
+                    <span className="text-xs">{participant.participantName}</span>
+                  </div>
+                ))}
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onKatzClick}
+                className="p-1 h-6 w-6 flex-shrink-0"
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
+          )}
+
+          {showShareInfo && (
+            <div className="bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-2 w-full flex items-center h-10">
+              <span className="text-sm text-gray-600 dark:text-gray-400 flex-shrink-0 mr-2">Share this link</span>
+              <div className="flex items-center gap-1 flex-1 mr-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={onCopyShareLink}
+                  className="p-1 h-6 w-6 flex-shrink-0"
+                >
+                  <Copy className="h-3 w-3" />
+                </Button>
+                <input
+                  type="text"
+                  value={shareUrl || ''}
+                  readOnly
+                  className="p-1 border rounded bg-white dark:bg-gray-700 text-xs font-mono flex-1 h-6"
+                />
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onShareClick}
+                className="p-1 h-6 w-6 flex-shrink-0"
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
+          )}
+        </div>
 
       </Card>
 
-      {/* Overlay Chat Window */}
-      {currentParticipant && (
-        <LLMChatWindow
-          participantName={currentParticipant.name}
-          participantId={currentParticipant.id}
-          eventId={event.id}
-          eventContext={{
-            title: event.title,
-            startDate: event.start_date,
-            endDate: event.end_date,
-            startTime: event.start_time,
-            endTime: event.end_time
-          }}
-          isOpen={showChatWindow}
-          onClose={() => onToggleChat?.()}
-          onAvailabilityUpdate={onLLMAvailabilityUpdate || (() => {})}
-          isInline={false}
-        />
-      )}
     </div>
   );
 }
