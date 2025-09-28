@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { Card, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Send, User, X, RotateCcw } from 'lucide-react';
 import { RobotCatIcon } from '@/components/icons/RobotCatIcon';
+import { useAutoScroll } from '@/lib/useAutoScroll';
 
 interface Message {
   id: string;
@@ -65,13 +66,15 @@ export function LLMChatWindow({
     "I prefer late afternoons"
   ];
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+  // Enhanced auto-scroll functionality
+  const { containerRef, scrollToBottom } = useAutoScroll<HTMLDivElement>(
+    [messages, isTyping],
+    {
+      threshold: 150,
+      behavior: 'smooth',
+      delay: 100
+    }
+  );
 
   const addMessage = (content: string, type: 'user' | 'llm' | 'system', participantName?: string) => {
     const newMessage: Message = {
@@ -194,6 +197,7 @@ export function LLMChatWindow({
         <CardContent className="flex-1 flex flex-col p-0 bg-gray-50/80 overflow-hidden">
           {/* Messages */}
           <div
+            ref={containerRef}
             className="flex-1 overflow-y-auto p-3 space-y-4 chat-messages-scroll"
             style={{
               scrollbarWidth: 'thin',
@@ -340,6 +344,7 @@ export function LLMChatWindow({
         <CardContent className="flex-1 flex flex-col p-0 bg-gray-800/80 overflow-hidden">
           {/* Messages */}
           <div
+            ref={containerRef}
             className="flex-1 overflow-y-auto p-3 sm:p-6 space-y-4 chat-messages-scroll"
             style={{
               scrollbarWidth: 'thin',

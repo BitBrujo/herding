@@ -1,6 +1,42 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Smooth scrolling enhancements */
+.chat-messages-scroll {
+  scroll-behavior: smooth;
+  scroll-padding-bottom: 20px;
+}
+
+/* Ensure smooth scrolling on all devices */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Enhanced smooth scrolling for webkit browsers */
+@supports (scroll-behavior: smooth) {
+  .chat-messages-scroll {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Custom scrollbar styling for chat windows */
+.chat-messages-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-messages-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-messages-scroll::-webkit-scrollbar-thumb {
+  background: #4ade80;
+  border-radius: 3px;
+}
+
+.chat-messages-scroll::-webkit-scrollbar-thumb:hover {
+  background: #16a34a;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {

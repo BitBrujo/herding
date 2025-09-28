@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { User, X, Send, Loader2 } from 'lucide-react';
 import { RobotCatIcon } from '@/components/icons/RobotCatIcon';
+import { useAutoScroll } from '@/lib/useAutoScroll';
 
 interface Message {
   id: string;
@@ -41,13 +42,15 @@ export function AIRobotChat({ isOpen, onClose, onParameterUpdate }: AIRobotChatP
   const [messageCounter, setMessageCounter] = useState(2);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+  // Enhanced auto-scroll functionality
+  const { containerRef, scrollToBottom } = useAutoScroll<HTMLDivElement>(
+    [messages, isLoading],
+    {
+      threshold: 150,
+      behavior: 'smooth',
+      delay: 100
+    }
+  );
 
   const addMessage = (content: string, type: 'user' | 'assistant', parameterUpdates?: ParameterUpdate[]) => {
     const messageId = `${type}-${messageCounter}`;
@@ -141,7 +144,9 @@ RoboKatz
 
         <CardContent className="flex-1 flex flex-col p-0 bg-gray-800/80 overflow-hidden">
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-4"
+          <div
+            ref={containerRef}
+            className="flex-1 overflow-y-auto p-6 space-y-4"
             style={{
               scrollbarWidth: 'thin',
               scrollbarColor: '#4ade80 #374151'
