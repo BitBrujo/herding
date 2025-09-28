@@ -17,6 +17,7 @@ interface MeetingData {
   start_time: string;
   end_time: string;
   max_participants: number;
+  day_range: number;
 }
 
 interface MeetingCreatorProps {
@@ -34,7 +35,8 @@ export function MeetingCreator({ onMeetingCreated, onCancel }: MeetingCreatorPro
     start_date: new Date().toISOString().split('T')[0],
     start_time: '09:00',
     end_time: '19:00',
-    max_participants: 7
+    max_participants: 7,
+    day_range: 7
   });
 
 
@@ -91,8 +93,8 @@ export function MeetingCreator({ onMeetingCreated, onCancel }: MeetingCreatorPro
           organizer_email: '',
           meeting_importance: 'medium',
           meeting_type: 'general',
-          // Set end date to 7 days from start date
-          end_date: new Date(new Date(formData.start_date).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+          // Set end date based on selected day range
+          end_date: new Date(new Date(formData.start_date).getTime() + formData.day_range * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
         }),
       });
 
@@ -224,7 +226,7 @@ export function MeetingCreator({ onMeetingCreated, onCancel }: MeetingCreatorPro
                 <div className="flex-1">
                   <label className="block text-sm font-medium mb-2 text-left">
                     <Calendar className="inline h-4 w-4 mr-1 text-white" />
-                    Start Date (7 day range from selected date)
+                    Start Date
                   </label>
                   <input
                     type="date"
@@ -234,6 +236,23 @@ export function MeetingCreator({ onMeetingCreated, onCancel }: MeetingCreatorPro
                     style={{
                       colorScheme: 'dark'
                     }}
+                    required
+                  />
+                </div>
+
+                {/* Day Range */}
+                <div className="w-32">
+                  <label className="block text-sm font-medium mb-2 text-left">
+                    <Calendar className="inline h-4 w-4 mr-1" />
+                    Day Range
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="30"
+                    value={formData.day_range}
+                    onChange={(e) => handleInputChange('day_range', parseInt(e.target.value) || 1)}
+                    className="w-full p-3 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
                     required
                   />
                 </div>
